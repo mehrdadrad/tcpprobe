@@ -57,7 +57,7 @@ func (c *client) dialContext(ctx context.Context, network, addr string) (net.Con
 }
 
 func (c *client) dialTLSContext(ctx context.Context, network, addr string) (net.Conn, error) {
-	config := tls.Config{InsecureSkipVerify: true}
+	config := tls.Config{InsecureSkipVerify: c.req.insecure, ServerName: c.serverName()}
 	tlsConn := tls.Client(c.conn, &config)
 
 	err := tlsConn.Handshake()
@@ -131,8 +131,9 @@ func (c *client) close() {
 
 func (c *client) httpGet() error {
 	tr := &http.Transport{
-		DialContext:    c.dialContext,
-		DialTLSContext: c.dialTLSContext,
+		DialContext:       c.dialContext,
+		DialTLSContext:    c.dialTLSContext,
+		ForceAttemptHTTP2: c.req.http2,
 	}
 
 	httpClient := &http.Client{
@@ -159,4 +160,25 @@ func (c *client) noRedirect(req *http.Request, via []*http.Request) error {
 	//log.Printf("%#v", via[len(via)-1].URL.Host)
 	// req.URL.Host == via[len(via)-1].URL.Host
 	return fmt.Errorf("%s has been redirected", c.req.target)
+}
+
+func (c *client) serverName() string {
+	var hostPort string
+
+	if c.req.serverName != "" {
+		return c.req.serverName
+	}
+
+	if c.req.urlSchema.Host != "" {
+		hostPort = c.req.urlSchema.Host
+	} else {
+		hostPort = c.req.target
+	}
+
+	host, _, err := net.SplitHostPort(hostPort)
+	if err != nil {
+		return hostPort
+	}
+
+	return host
 }

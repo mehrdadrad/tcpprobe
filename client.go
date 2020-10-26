@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -22,8 +23,9 @@ type httpResponse struct {
 }
 
 type timing struct {
-	connect int64
-	resolve int64
+	connect  int64
+	resolve  int64
+	download int64
 }
 
 func newClient(req *request) (*client, error) {
@@ -54,7 +56,16 @@ func (c *client) dialContext(ctx context.Context, network, addr string) (net.Con
 	return c.conn, nil
 }
 
-func (c *client) getAddr() (string, error) {
+func (c *client) dialTLSContext(ctx context.Context, network, addr string) (net.Conn, error) {
+	config := tls.Config{InsecureSkipVerify: true}
+	tlsConn := tls.Client(c.conn, &config)
+
+	err := tlsConn.Handshake()
+
+	return tlsConn, err
+}
+
+func (c *client) getHostPort() (string, string, error) {
 	var host string
 
 	if c.req.urlSchema.Host != "" {
@@ -64,6 +75,27 @@ func (c *client) getAddr() (string, error) {
 	}
 
 	host, port, err := net.SplitHostPort(host)
+	if e, ok := err.(*net.AddrError); ok && e.Err == "missing port in address" {
+		if c.req.urlSchema.Host != "" {
+			host = c.req.urlSchema.Host
+		} else {
+			host = c.req.target
+		}
+
+		if c.req.urlSchema.Scheme == "https" {
+			port = "443"
+		} else {
+			port = "80"
+		}
+	} else if err != nil {
+		return "", "", err
+	}
+
+	return host, port, nil
+}
+
+func (c *client) getAddr() (string, error) {
+	host, port, err := c.getHostPort()
 	if err != nil {
 		return "", err
 	}
@@ -100,7 +132,7 @@ func (c *client) close() {
 func (c *client) httpGet() error {
 	tr := &http.Transport{
 		DialContext:    c.dialContext,
-		DialTLSContext: c.dialContext,
+		DialTLSContext: c.dialTLSContext,
 	}
 
 	httpClient := &http.Client{
@@ -112,7 +144,9 @@ func (c *client) httpGet() error {
 		return err
 	}
 
+	t := time.Now()
 	io.Copy(ioutil.Discard, resp.Body)
+	c.timing.download = time.Since(t).Microseconds()
 
 	c.httpResponse.statusCode = resp.StatusCode
 
@@ -122,5 +156,7 @@ func (c *client) httpGet() error {
 }
 
 func (c *client) noRedirect(req *http.Request, via []*http.Request) error {
+	//log.Printf("%#v", via[len(via)-1].URL.Host)
+	// req.URL.Host == via[len(via)-1].URL.Host
 	return fmt.Errorf("%s has been redirected", c.req.target)
 }

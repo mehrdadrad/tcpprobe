@@ -8,13 +8,16 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"syscall"
 	"time"
+	"unsafe"
 )
 
 type client struct {
 	conn net.Conn
 	req  *request
 
+	tcpInfo *syscall.TCPInfo
 	timing
 	httpResponse
 }
@@ -195,4 +198,31 @@ func getSrcAddr(src string) net.Addr {
 	ip := net.ParseIP(src)
 
 	return &net.TCPAddr{IP: ip, Port: 0, Zone: ""}
+}
+
+func (c *client) getTCPInfo() error {
+	tcpConn := c.conn.(*net.TCPConn)
+	if tcpConn == nil {
+		return fmt.Errorf("tcp conn is nil")
+	}
+
+	file, err := tcpConn.File()
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	fd := file.Fd()
+	tcpInfo := syscall.TCPInfo{}
+	size := uint32(syscall.SizeofTCPInfo)
+
+	_, _, e := syscall.Syscall6(syscall.SYS_GETSOCKOPT, fd, syscall.SOL_TCP, syscall.TCP_INFO,
+		uintptr(unsafe.Pointer(&tcpInfo)), uintptr(unsafe.Pointer(&size)), 0)
+	if e != 0 {
+		return fmt.Errorf("syscall err number=%d", e)
+	}
+
+	c.tcpInfo = &tcpInfo
+
+	return nil
 }

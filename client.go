@@ -43,10 +43,14 @@ func (c *client) connect() error {
 	}
 
 	t := time.Now()
-	c.conn, err = net.DialTimeout("tcp", addr, c.req.timeout)
+	d := net.Dialer{LocalAddr: getSrcAddr(c.req.srcAddr)}
+	ctx, cancel := context.WithTimeout(context.Background(), c.req.timeout)
+	defer cancel()
+	c.conn, err = d.DialContext(ctx, "tcp", addr)
 	if err != nil {
 		return err
 	}
+
 	c.timing.connect = time.Since(t).Microseconds()
 
 	return nil
@@ -181,4 +185,14 @@ func (c *client) serverName() string {
 	}
 
 	return host
+}
+
+func getSrcAddr(src string) net.Addr {
+	if src == "" {
+		return nil
+	}
+
+	ip := net.ParseIP(src)
+
+	return &net.TCPAddr{IP: ip, Port: 0, Zone: ""}
 }

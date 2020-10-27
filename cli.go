@@ -15,6 +15,7 @@ type request struct {
 	http2      bool
 	insecure   bool
 	serverName string
+	srcAddr    string
 
 	timeout time.Duration
 	wait    time.Duration
@@ -28,6 +29,7 @@ func getCli(args []string) (*request, error) {
 		&cli.BoolFlag{Name: "http2"},
 		&cli.BoolFlag{Name: "insecure", Aliases: []string{"i"}},
 		&cli.StringFlag{Name: "server-name", Aliases: []string{"n"}},
+		&cli.StringFlag{Name: "source-addr", Aliases: []string{"S"}},
 		&cli.IntFlag{Name: "count", Aliases: []string{"c"}, Value: 1},
 		&cli.DurationFlag{Name: "timeout", Aliases: []string{"t"}, Value: time.Second},
 		&cli.DurationFlag{Name: "wait", Aliases: []string{"w"}, Value: time.Second},
@@ -44,6 +46,7 @@ func getCli(args []string) (*request, error) {
 				timeout:    c.Duration("timeout"),
 				insecure:   c.Bool("insecure"),
 				serverName: c.String("server-name"),
+				srcAddr:    c.String("source-addr"),
 			}
 
 			if c.NArg() > 0 {

@@ -46,11 +46,11 @@ type stats struct {
 	RcvSpace     uint32 `key:"Rcv_space"`
 	TotalRetrans uint32 `key:"Total_retrans"`
 
-	httpStatusCode int
+	HTTPStatusCode int
 
-	connect  int64
-	resolve  int64
-	download int64
+	Connect  int64
+	Resolve  int64
+	Download int64
 }
 
 type client struct {
@@ -81,7 +81,7 @@ func (c *client) connect() error {
 		return err
 	}
 
-	c.stats.connect = time.Since(t).Microseconds()
+	c.stats.Connect = time.Since(t).Microseconds()
 
 	return nil
 }
@@ -139,7 +139,7 @@ func (c *client) getAddr() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	c.stats.resolve = time.Since(t).Microseconds()
+	c.stats.Resolve = time.Since(t).Microseconds()
 
 	for _, addr := range addrs {
 		// IPv4 requested
@@ -181,9 +181,9 @@ func (c *client) httpGet() error {
 
 	t := time.Now()
 	io.Copy(ioutil.Discard, resp.Body)
-	c.stats.download = time.Since(t).Microseconds()
+	c.stats.Download = time.Since(t).Microseconds()
 
-	c.stats.httpStatusCode = resp.StatusCode
+	c.stats.HTTPStatusCode = resp.StatusCode
 
 	resp.Body.Close()
 

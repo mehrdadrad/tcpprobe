@@ -8,33 +8,60 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"reflect"
 	"syscall"
 	"time"
 	"unsafe"
 )
 
-type client struct {
-	conn net.Conn
-	req  *request
+type stats struct {
+	State        uint8  `key:"State"`
+	CaState      uint8  `key:"Ca_state"`
+	Retransmits  uint8  `key:"Retransmits"`
+	Probes       uint8  `key:"Probes"`
+	Backoff      uint8  `key:"Backoff"`
+	Options      uint8  `key:"Options"`
+	Rto          uint32 `key:"Rto"`
+	Ato          uint32 `key:"Ato"`
+	SndMss       uint32 `key:"Snd_mss"`
+	RcvMss       uint32 `key:"Rcv_mss"`
+	Unacked      uint32 `key:"Unacked"`
+	Sacked       uint32 `key:"Sacked"`
+	Lost         uint32 `key:"Lost"`
+	Retrans      uint32 `key:"Retrans"`
+	Fackets      uint32 `key:"Fackets"`
+	LastDataSent uint32 `key:"Last_data_sent"`
+	LastAckSent  uint32 `key:"Last_ack_sent"`
+	LastDataRecv uint32 `key:"Last_data_recv"`
+	LastAckRecv  uint32 `key:"Last_ack_recv"`
+	Pmtu         uint32 `key:"Pmtu"`
+	RcvSsthresh  uint32 `key:"Rcv_ssthresh"`
+	Rtt          uint32 `key:"Rtt"`
+	Rttvar       uint32 `key:"Rttvar"`
+	SndSsthresh  uint32 `key:"Snd_ssthresh"`
+	SndCwnd      uint32 `key:"Snd_cwnd"`
+	Advmss       uint32 `key:"Advmss"`
+	Reordering   uint32 `key:"Reordering"`
+	RcvRtt       uint32 `key:"Rcv_rtt"`
+	RcvSpace     uint32 `key:"Rcv_space"`
+	TotalRetrans uint32 `key:"Total_retrans"`
 
-	tcpInfo *syscall.TCPInfo
-	timing
-	httpResponse
-}
-type httpResponse struct {
-	statusCode int
-}
+	httpStatusCode int
 
-type timing struct {
 	connect  int64
 	resolve  int64
 	download int64
 }
 
-func newClient(req *request) (*client, error) {
-	c := &client{req: req}
+type client struct {
+	conn net.Conn
+	req  *request
 
-	return c, c.connect()
+	stats
+}
+
+func newClient(req *request) *client {
+	return &client{req: req}
 }
 
 func (c *client) connect() error {
@@ -54,7 +81,7 @@ func (c *client) connect() error {
 		return err
 	}
 
-	c.timing.connect = time.Since(t).Microseconds()
+	c.stats.connect = time.Since(t).Microseconds()
 
 	return nil
 }
@@ -112,7 +139,7 @@ func (c *client) getAddr() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	c.timing.resolve = time.Since(t).Microseconds()
+	c.stats.resolve = time.Since(t).Microseconds()
 
 	for _, addr := range addrs {
 		// IPv4 requested
@@ -154,9 +181,9 @@ func (c *client) httpGet() error {
 
 	t := time.Now()
 	io.Copy(ioutil.Discard, resp.Body)
-	c.timing.download = time.Since(t).Microseconds()
+	c.stats.download = time.Since(t).Microseconds()
 
-	c.httpResponse.statusCode = resp.StatusCode
+	c.stats.httpStatusCode = resp.StatusCode
 
 	resp.Body.Close()
 
@@ -222,7 +249,23 @@ func (c *client) getTCPInfo() error {
 		return fmt.Errorf("syscall err number=%d", e)
 	}
 
-	c.tcpInfo = &tcpInfo
+	src := reflect.ValueOf(&tcpInfo).Elem()
+	dst := reflect.ValueOf(&c.stats).Elem()
+
+	for i := 0; i < dst.NumField(); i++ {
+		if dst.Type().Field(i).Tag.Get("key") == "" {
+			continue
+		}
+
+		from := src.FieldByName(dst.Type().Field(i).Tag.Get("key")).Addr().Interface()
+		to := dst.FieldByName(dst.Type().Field(i).Name).Addr().Interface()
+		reflect.ValueOf(to).Elem().Set(reflect.ValueOf(from).Elem())
+	}
 
 	return nil
+}
+
+func (c *client) reset() {
+	s := reflect.ValueOf(&c.stats).Elem()
+	s.Set(reflect.Zero(s.Type()))
 }

@@ -16,6 +16,7 @@ type request struct {
 	insecure   bool
 	serverName string
 	srcAddr    string
+	promAddr   string
 
 	timeout time.Duration
 	wait    time.Duration
@@ -30,6 +31,7 @@ func getCli(args []string) (*request, error) {
 		&cli.BoolFlag{Name: "insecure", Aliases: []string{"i"}},
 		&cli.StringFlag{Name: "server-name", Aliases: []string{"n"}},
 		&cli.StringFlag{Name: "source-addr", Aliases: []string{"S"}},
+		&cli.StringFlag{Name: "prometheus-addr", Aliases: []string{"p"}, Value: ":8080"},
 		&cli.IntFlag{Name: "count", Aliases: []string{"c"}, Value: 1},
 		&cli.DurationFlag{Name: "timeout", Aliases: []string{"t"}, Value: time.Second},
 		&cli.DurationFlag{Name: "wait", Aliases: []string{"w"}, Value: time.Second},
@@ -47,6 +49,7 @@ func getCli(args []string) (*request, error) {
 				insecure:   c.Bool("insecure"),
 				serverName: c.String("server-name"),
 				srcAddr:    c.String("source-addr"),
+				promAddr:   c.String("prometheus-addr"),
 			}
 
 			if c.NArg() > 0 {

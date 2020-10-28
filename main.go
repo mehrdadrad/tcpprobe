@@ -4,16 +4,25 @@ import (
 	"log"
 	"os"
 	"strings"
+	"time"
 )
 
 func main() {
+	var (
+		counter int
+	)
 	r, err := getCli(os.Args)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for i := 0; i < r.count; i++ {
-		c, err := newClient(r)
+	c := newClient(r)
+	c.prometheus()
+
+	for {
+		c.reset()
+
+		err = c.connect()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -24,8 +33,19 @@ func main() {
 			}
 		}
 
-		log.Printf("%d %#v", i, c)
+		if err = c.getTCPInfo(); err != nil {
+			log.Println(err)
+		}
+
+		c.printer()
 
 		c.close()
+		counter++
+
+		if counter >= c.req.count && c.req.count != 0 {
+			break
+		}
+
+		time.Sleep(c.req.wait)
 	}
 }

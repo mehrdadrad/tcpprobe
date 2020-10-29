@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"net"
 	"net/http"
+	"net/url"
 	"reflect"
 	"syscall"
 	"time"
@@ -15,53 +16,63 @@ import (
 )
 
 type stats struct {
-	State        uint8  `key:"State"`
-	CaState      uint8  `key:"Ca_state"`
-	Retransmits  uint8  `key:"Retransmits"`
-	Probes       uint8  `key:"Probes"`
-	Backoff      uint8  `key:"Backoff"`
-	Options      uint8  `key:"Options"`
-	Rto          uint32 `key:"Rto"`
-	Ato          uint32 `key:"Ato"`
-	SndMss       uint32 `key:"Snd_mss"`
-	RcvMss       uint32 `key:"Rcv_mss"`
-	Unacked      uint32 `key:"Unacked"`
-	Sacked       uint32 `key:"Sacked"`
-	Lost         uint32 `key:"Lost"`
-	Retrans      uint32 `key:"Retrans"`
-	Fackets      uint32 `key:"Fackets"`
-	LastDataSent uint32 `key:"Last_data_sent"`
-	LastAckSent  uint32 `key:"Last_ack_sent"`
-	LastDataRecv uint32 `key:"Last_data_recv"`
-	LastAckRecv  uint32 `key:"Last_ack_recv"`
-	Pmtu         uint32 `key:"Pmtu"`
-	RcvSsthresh  uint32 `key:"Rcv_ssthresh"`
-	Rtt          uint32 `key:"Rtt"`
-	Rttvar       uint32 `key:"Rttvar"`
-	SndSsthresh  uint32 `key:"Snd_ssthresh"`
-	SndCwnd      uint32 `key:"Snd_cwnd"`
-	Advmss       uint32 `key:"Advmss"`
-	Reordering   uint32 `key:"Reordering"`
-	RcvRtt       uint32 `key:"Rcv_rtt"`
-	RcvSpace     uint32 `key:"Rcv_space"`
-	TotalRetrans uint32 `key:"Total_retrans"`
+	State        uint8  `key:"State" name:"state" help:""`
+	CaState      uint8  `key:"Ca_state" name:"ca_state" help:""`
+	Retransmits  uint8  `key:"Retransmits" name:"retransmits" help:""`
+	Probes       uint8  `key:"Probes" name:"probes" help:""`
+	Backoff      uint8  `key:"Backoff" name:"backoff" help:""`
+	Options      uint8  `key:"Options" name:"options" help:""`
+	Rto          uint32 `key:"Rto" name:"rto" help:""`
+	Ato          uint32 `key:"Ato" name:"ato" help:""`
+	SndMss       uint32 `key:"Snd_mss" name:"snd_mss" help:""`
+	RcvMss       uint32 `key:"Rcv_mss" name:"rcv_mss" help:""`
+	Unacked      uint32 `key:"Unacked" name:"unacked" help:""`
+	Sacked       uint32 `key:"Sacked" name:"sacked" help:""`
+	Lost         uint32 `key:"Lost" name:"lost" help:""`
+	Retrans      uint32 `key:"Retrans" name:"retrans" help:""`
+	Fackets      uint32 `key:"Fackets" name:"fackets" help:""`
+	LastDataSent uint32 `key:"Last_data_sent" name:"last_data_sent" help:""`
+	LastAckSent  uint32 `key:"Last_ack_sent" name:"last_ack_sent" help:""`
+	LastDataRecv uint32 `key:"Last_data_recv" name:"last_data_recv" help:""`
+	LastAckRecv  uint32 `key:"Last_ack_recv" name:"last_ack_recv" help:""`
+	Pmtu         uint32 `key:"Pmtu" name:"path_mtu" help:""`
+	RcvSsthresh  uint32 `key:"Rcv_ssthresh" name:"rev_ss_thresh" help:""`
+	Rtt          uint32 `key:"Rtt" name:"rtt" help:""`
+	Rttvar       uint32 `key:"Rttvar" name:"rtt_var" help:""`
+	SndSsthresh  uint32 `key:"Snd_ssthresh" name:"snd_ss_thresh" help:""`
+	SndCwnd      uint32 `key:"Snd_cwnd" name:"snd_cwnd" help:""`
+	Advmss       uint32 `key:"Advmss" name:"adv_mss" help:""`
+	Reordering   uint32 `key:"Reordering" name:"reordering" help:""`
+	RcvRtt       uint32 `key:"Rcv_rtt" name:"rcv_rtt" help:""`
+	RcvSpace     uint32 `key:"Rcv_space" name:"rcv_space" help:""`
+	TotalRetrans uint32 `key:"Total_retrans" name:"total_retrans" help:""`
 
-	HTTPStatusCode int
+	HTTPStatusCode int   `name:"http_status_code" help:"HTTP 1xx-5xx status code"`
+	HTTPRcvdBytes  int64 `name:"http_rcvd_bytes" help:""`
+	HTTPRequest    int64 `name:"http_request" help:""`
+	HTTPResponse   int64 `name:"http_response" help:""`
 
-	Connect  int64
-	Resolve  int64
-	Download int64
+	Resolve    int64 `name:"dns_resolve" help:""`
+	TCPConnect int64 `name:"tcp_connect" help:""`
 }
 
 type client struct {
+	target    string
+	urlSchema *url.URL
+
 	conn net.Conn
 	req  *request
 
 	stats
 }
 
-func newClient(req *request) *client {
-	return &client{req: req}
+func newClient(req *request, target string) *client {
+	urlSchema, _ := url.Parse(target)
+	return &client{
+		target:    target,
+		urlSchema: urlSchema,
+		req:       req,
+	}
 }
 
 func (c *client) connect() error {
@@ -81,7 +92,7 @@ func (c *client) connect() error {
 		return err
 	}
 
-	c.stats.Connect = time.Since(t).Microseconds()
+	c.stats.TCPConnect = time.Since(t).Microseconds()
 
 	return nil
 }
@@ -102,21 +113,21 @@ func (c *client) dialTLSContext(ctx context.Context, network, addr string) (net.
 func (c *client) getHostPort() (string, string, error) {
 	var host string
 
-	if c.req.urlSchema.Host != "" {
-		host = c.req.urlSchema.Host
+	if c.urlSchema.Host != "" {
+		host = c.urlSchema.Host
 	} else {
-		host = c.req.target
+		host = c.target
 	}
 
 	host, port, err := net.SplitHostPort(host)
 	if e, ok := err.(*net.AddrError); ok && e.Err == "missing port in address" {
-		if c.req.urlSchema.Host != "" {
-			host = c.req.urlSchema.Host
+		if c.urlSchema.Host != "" {
+			host = c.urlSchema.Host
 		} else {
-			host = c.req.target
+			host = c.target
 		}
 
-		if c.req.urlSchema.Scheme == "https" {
+		if c.urlSchema.Scheme == "https" {
 			port = "443"
 		} else {
 			port = "80"
@@ -174,16 +185,22 @@ func (c *client) httpGet() error {
 		Transport:     tr,
 		CheckRedirect: c.noRedirect,
 	}
-	resp, err := httpClient.Get(c.req.target)
+	t := time.Now()
+	resp, err := httpClient.Get(c.target)
 	if err != nil {
 		return err
 	}
+	c.stats.HTTPRequest = time.Since(t).Microseconds()
 
-	t := time.Now()
-	io.Copy(ioutil.Discard, resp.Body)
-	c.stats.Download = time.Since(t).Microseconds()
+	t = time.Now()
+	written, err := io.Copy(ioutil.Discard, resp.Body)
+	if err != nil {
+		return err
+	}
+	c.stats.HTTPResponse = time.Since(t).Microseconds()
 
 	c.stats.HTTPStatusCode = resp.StatusCode
+	c.stats.HTTPRcvdBytes = written
 
 	resp.Body.Close()
 
@@ -193,7 +210,7 @@ func (c *client) httpGet() error {
 func (c *client) noRedirect(req *http.Request, via []*http.Request) error {
 	//log.Printf("%#v", via[len(via)-1].URL.Host)
 	// req.URL.Host == via[len(via)-1].URL.Host
-	return fmt.Errorf("%s has been redirected", c.req.target)
+	return fmt.Errorf("%s has been redirected", c.target)
 }
 
 func (c *client) serverName() string {
@@ -203,10 +220,10 @@ func (c *client) serverName() string {
 		return c.req.serverName
 	}
 
-	if c.req.urlSchema.Host != "" {
-		hostPort = c.req.urlSchema.Host
+	if c.urlSchema.Host != "" {
+		hostPort = c.urlSchema.Host
 	} else {
-		hostPort = c.req.target
+		hostPort = c.target
 	}
 
 	host, _, err := net.SplitHostPort(hostPort)

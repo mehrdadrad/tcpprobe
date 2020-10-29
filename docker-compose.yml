@@ -1,0 +1,28 @@
+version: "3"
+services:
+  tcpprobe:
+    image: tcpprobe
+    hostname: tcpprobe
+    ports:
+      - "8081:8081"
+    entrypoint:
+      [
+        "tcpprobe",
+        "-c",
+        "0",
+        "-w",
+        "5s",
+        "https://www.google.com",
+        "https://github.com",
+      ]
+
+  prometheus:
+    image: prom/prometheus:latest
+    hostname: prom
+    ports:
+      - "9090:9090"
+    container_name: prometheus
+    volumes:
+      - ./:/etc/prometheus/
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"

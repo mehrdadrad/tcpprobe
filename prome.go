@@ -1,11 +1,9 @@
 package main
 
 import (
-	"net/http"
 	"reflect"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
 
 func (c *client) prometheus() {
@@ -16,14 +14,18 @@ func (c *client) prometheus() {
 		switch v.Field(i).Kind() {
 		case reflect.Uint, reflect.Uint8, reflect.Uint32, reflect.Uint64:
 			prometheus.Register(prometheus.NewGaugeFunc(prometheus.GaugeOpts{
-				Name: v.Type().Field(i).Name,
+				Name:        "tcpprobe_" + v.Type().Field(i).Tag.Get("name"),
+				Help:        v.Type().Field(i).Tag.Get("help"),
+				ConstLabels: prometheus.Labels{"target": c.target},
 			},
 				func() float64 {
 					return float64(v.Field(i).Uint())
 				}))
 		case reflect.Int, reflect.Int8, reflect.Int32, reflect.Int64:
 			prometheus.Register(prometheus.NewGaugeFunc(prometheus.GaugeOpts{
-				Name: v.Type().Field(i).Name,
+				Name:        "tcpprobe_" + v.Type().Field(i).Tag.Get("name"),
+				Help:        v.Type().Field(i).Tag.Get("help"),
+				ConstLabels: prometheus.Labels{"target": c.target},
 			},
 				func() float64 {
 					return float64(v.Field(i).Int())
@@ -31,6 +33,4 @@ func (c *client) prometheus() {
 		}
 	}
 
-	http.Handle("/", promhttp.Handler())
-	go http.ListenAndServe(c.req.promAddr, nil)
 }

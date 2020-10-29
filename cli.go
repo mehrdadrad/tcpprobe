@@ -1,15 +1,12 @@
 package main
 
 import (
-	"net/url"
 	"time"
 
 	cli "github.com/urfave/cli/v2"
 )
 
 type request struct {
-	target     string
-	urlSchema  *url.URL
 	count      int
 	ipv6       bool
 	http2      bool
@@ -22,8 +19,11 @@ type request struct {
 	wait    time.Duration
 }
 
-func getCli(args []string) (*request, error) {
-	var r *request
+func getCli(args []string) (*request, []string, error) {
+	var (
+		r       *request
+		targets []string
+	)
 
 	flags := []cli.Flag{
 		&cli.BoolFlag{Name: "ipv6", Aliases: []string{"6"}},
@@ -31,7 +31,7 @@ func getCli(args []string) (*request, error) {
 		&cli.BoolFlag{Name: "insecure", Aliases: []string{"i"}},
 		&cli.StringFlag{Name: "server-name", Aliases: []string{"n"}},
 		&cli.StringFlag{Name: "source-addr", Aliases: []string{"S"}},
-		&cli.StringFlag{Name: "prometheus-addr", Aliases: []string{"p"}, Value: ":8080"},
+		&cli.StringFlag{Name: "prometheus-addr", Aliases: []string{"p"}, Value: ":8081"},
 		&cli.IntFlag{Name: "count", Aliases: []string{"c"}, Value: 1},
 		&cli.DurationFlag{Name: "timeout", Aliases: []string{"t"}, Value: time.Second},
 		&cli.DurationFlag{Name: "wait", Aliases: []string{"w"}, Value: time.Second},
@@ -52,10 +52,7 @@ func getCli(args []string) (*request, error) {
 				promAddr:   c.String("prometheus-addr"),
 			}
 
-			if c.NArg() > 0 {
-				r.target = c.Args().Get(c.NArg() - 1)
-				r.urlSchema, _ = url.Parse(r.target)
-			}
+			targets = c.Args().Slice()
 
 			return nil
 		},
@@ -63,5 +60,5 @@ func getCli(args []string) (*request, error) {
 
 	err := app.Run(args)
 
-	return r, err
+	return r, targets, err
 }

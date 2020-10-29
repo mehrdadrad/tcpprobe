@@ -6,10 +6,12 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
 	"net/http"
 	"net/url"
 	"reflect"
+	"strings"
 	"syscall"
 	"time"
 	"unsafe"
@@ -52,8 +54,11 @@ type stats struct {
 	HTTPRequest    int64 `name:"http_request" help:""`
 	HTTPResponse   int64 `name:"http_response" help:""`
 
-	Resolve    int64 `name:"dns_resolve" help:""`
+	DNSResolve int64 `name:"dns_resolve" help:""`
 	TCPConnect int64 `name:"tcp_connect" help:""`
+
+	TCPConnectError int64 `name:"tcp_connect_error" help:""`
+	DNSResolveError int64 `name:"dns_resolve_error" help:""`
 }
 
 type client struct {
@@ -89,6 +94,7 @@ func (c *client) connect() error {
 	defer cancel()
 	c.conn, err = d.DialContext(ctx, "tcp", addr)
 	if err != nil {
+		c.stats.TCPConnectError++
 		return err
 	}
 
@@ -148,9 +154,10 @@ func (c *client) getAddr() (string, error) {
 	t := time.Now()
 	addrs, err := net.LookupHost(host)
 	if err != nil {
+		c.stats.DNSResolveError++
 		return "", err
 	}
-	c.stats.Resolve = time.Since(t).Microseconds()
+	c.stats.DNSResolve = time.Since(t).Microseconds()
 
 	for _, addr := range addrs {
 		// IPv4 requested
@@ -232,6 +239,40 @@ func (c *client) serverName() string {
 	}
 
 	return host
+}
+
+func (c *client) probe() {
+	counter := 0
+
+	for {
+		err := c.connect()
+		if err != nil {
+			log.Println(err)
+			time.Sleep(c.req.wait)
+			continue
+		}
+
+		if strings.HasPrefix(c.target, "http") {
+			if err := c.httpGet(); err != nil {
+				log.Println(err)
+			}
+		}
+
+		if err = c.getTCPInfo(); err != nil {
+			log.Println(err)
+		}
+
+		c.printer()
+
+		c.close()
+		counter++
+
+		if counter >= c.req.count && c.req.count != 0 {
+			break
+		}
+
+		time.Sleep(c.req.wait)
+	}
 }
 
 func getSrcAddr(src string) net.Addr {

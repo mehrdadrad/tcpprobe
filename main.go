@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"strings"
 	"sync"
 	"time"
 
@@ -19,45 +18,15 @@ func main() {
 		log.Fatal(err)
 	}
 
+	wg.Add(len(targets))
 	for _, target := range targets {
-		wg.Add(1)
 		target := target
 
 		go func() {
 			defer wg.Done()
-
-			counter := 0
 			c := newClient(req, target)
 			c.prometheus()
-
-			for {
-				err = c.connect()
-				if err != nil {
-					log.Println(err)
-					continue
-				}
-
-				if strings.HasPrefix(c.target, "http") {
-					if err := c.httpGet(); err != nil {
-						log.Println(err)
-					}
-				}
-
-				if err = c.getTCPInfo(); err != nil {
-					log.Println(err)
-				}
-
-				c.printer()
-
-				c.close()
-				counter++
-
-				if counter >= c.req.count && c.req.count != 0 {
-					break
-				}
-
-				time.Sleep(c.req.wait)
-			}
+			c.probe()
 		}()
 	}
 

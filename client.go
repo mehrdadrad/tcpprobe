@@ -18,36 +18,36 @@ import (
 )
 
 type stats struct {
-	State        uint8  `key:"State" name:"state" help:""`
-	CaState      uint8  `key:"Ca_state" name:"ca_state" help:""`
-	Retransmits  uint8  `key:"Retransmits" name:"retransmits" help:""`
-	Probes       uint8  `key:"Probes" name:"probes" help:""`
-	Backoff      uint8  `key:"Backoff" name:"backoff" help:""`
-	Options      uint8  `key:"Options" name:"options" help:""`
-	Rto          uint32 `key:"Rto" name:"rto" help:""`
-	Ato          uint32 `key:"Ato" name:"ato" help:""`
-	SndMss       uint32 `key:"Snd_mss" name:"snd_mss" help:""`
-	RcvMss       uint32 `key:"Rcv_mss" name:"rcv_mss" help:""`
-	Unacked      uint32 `key:"Unacked" name:"unacked" help:""`
-	Sacked       uint32 `key:"Sacked" name:"sacked" help:""`
-	Lost         uint32 `key:"Lost" name:"lost" help:""`
-	Retrans      uint32 `key:"Retrans" name:"retrans" help:""`
-	Fackets      uint32 `key:"Fackets" name:"fackets" help:""`
-	LastDataSent uint32 `key:"Last_data_sent" name:"last_data_sent" help:""`
-	LastAckSent  uint32 `key:"Last_ack_sent" name:"last_ack_sent" help:""`
-	LastDataRecv uint32 `key:"Last_data_recv" name:"last_data_recv" help:""`
-	LastAckRecv  uint32 `key:"Last_ack_recv" name:"last_ack_recv" help:""`
-	Pmtu         uint32 `key:"Pmtu" name:"path_mtu" help:""`
-	RcvSsthresh  uint32 `key:"Rcv_ssthresh" name:"rev_ss_thresh" help:""`
-	Rtt          uint32 `key:"Rtt" name:"rtt" help:""`
-	Rttvar       uint32 `key:"Rttvar" name:"rtt_var" help:""`
-	SndSsthresh  uint32 `key:"Snd_ssthresh" name:"snd_ss_thresh" help:""`
-	SndCwnd      uint32 `key:"Snd_cwnd" name:"snd_cwnd" help:""`
-	Advmss       uint32 `key:"Advmss" name:"adv_mss" help:""`
-	Reordering   uint32 `key:"Reordering" name:"reordering" help:""`
-	RcvRtt       uint32 `key:"Rcv_rtt" name:"rcv_rtt" help:""`
-	RcvSpace     uint32 `key:"Rcv_space" name:"rcv_space" help:""`
-	TotalRetrans uint32 `key:"Total_retrans" name:"total_retrans" help:""`
+	State        uint8  `key:"State" name:"tcpinfo_state" help:"TCP State"`
+	CaState      uint8  `key:"Ca_state" name:"tcpinfo_ca_state" help:""`
+	Retransmits  uint8  `key:"Retransmits" name:"tcpinfo_retransmits" help:""`
+	Probes       uint8  `key:"Probes" name:"tcpinfo_probes" help:"consecutive zero window probes that have gone unanswered"`
+	Backoff      uint8  `key:"Backoff" name:"tcpinfo_backoff" help:"used for exponential backoff re-transmission"`
+	Options      uint8  `key:"Options" name:"tcpinfo_options" help:""`
+	Rto          uint32 `key:"Rto" name:"tcpinfo_rto" help:"tcp re-transmission timeout value, the unit is microsecond"`
+	Ato          uint32 `key:"Ato" name:"tcpinfo_ato" help:"ack timeout, unit is microsecond"`
+	SndMss       uint32 `key:"Snd_mss" name:"tcpinfo_snd_mss" help:"current maximum segment size"`
+	RcvMss       uint32 `key:"Rcv_mss" name:"tcpinfo_rcv_mss" help:"maximum observed segment size from the remote host"`
+	Unacked      uint32 `key:"Unacked" name:"tcpinfo_unacked" help:""`
+	Sacked       uint32 `key:"Sacked" name:"tcpinfo_sacked" help:"scoreboard segment marked SACKED by sack blocks accounting for the pipe algorithm"`
+	Lost         uint32 `key:"Lost" name:"tcpinfo_lost" help:"scoreboard segments marked lost by loss detection heuristics accounting for the pipe algorithm"`
+	Retrans      uint32 `key:"Retrans" name:"tcpinfo_retrans" help:"how many times the retran occurs"`
+	Fackets      uint32 `key:"Fackets" name:"tcpinfo_fackets" help:""`
+	LastDataSent uint32 `key:"Last_data_sent" name:"tcpinfo_last_data_sent" help:"time since last data segment was sent"`
+	LastAckSent  uint32 `key:"Last_ack_sent" name:"tcpinfo_last_ack_sent" help:"how long time since the last ack sent"`
+	LastDataRecv uint32 `key:"Last_data_recv" name:"tcpinfo_last_data_recv" help:"time since last data segment was received"`
+	LastAckRecv  uint32 `key:"Last_ack_recv" name:"tcpinfo_last_ack_recv" help:"how long time since the last ack received"`
+	Pmtu         uint32 `key:"Pmtu" name:"tcpinfo_path_mtu" help:"path MTU"`
+	RcvSsthresh  uint32 `key:"Rcv_ssthresh" name:"tcpinfo_rev_ss_thresh" help:"tcp congestion window slow start threshold"`
+	Rtt          uint32 `key:"Rtt" name:"tcpinfo_rtt" help:"smoothed round trip time"`
+	Rttvar       uint32 `key:"Rttvar" name:"tcpinfo_rtt_var" help:"RTT variance"`
+	SndSsthresh  uint32 `key:"Snd_ssthresh" name:"tcpinfo_snd_ss_thresh" help:"slow start threshold"`
+	SndCwnd      uint32 `key:"Snd_cwnd" name:"tcpinfo_snd_cwnd" help:""`
+	Advmss       uint32 `key:"Advmss" name:"tcpinfo_adv_mss" help:""`
+	Reordering   uint32 `key:"Reordering" name:"tcpinfo_reordering" help:""`
+	RcvRtt       uint32 `key:"Rcv_rtt" name:"tcpinfo_rcv_rtt" help:"receiver side RTT estimate"`
+	RcvSpace     uint32 `key:"Rcv_space" name:"tcpinfo_rcv_space" help:"space reserved for the receive queue"`
+	TotalRetrans uint32 `key:"Total_retrans" name:"tcpinfo_total_retrans" help:"total number of segments containing retransmitted data"`
 
 	HTTPStatusCode int   `name:"http_status_code" help:"HTTP 1xx-5xx status code"`
 	HTTPRcvdBytes  int64 `name:"http_rcvd_bytes" help:""`
@@ -63,6 +63,8 @@ type stats struct {
 
 type client struct {
 	target    string
+	addr      string
+	timestamp int64
 	urlSchema *url.URL
 
 	conn net.Conn
@@ -82,6 +84,8 @@ func newClient(req *request, target string) *client {
 
 func (c *client) connect() error {
 	var err error
+
+	c.timestamp = time.Now().Unix()
 
 	addr, err := c.getAddr()
 	if err != nil {
@@ -163,6 +167,7 @@ func (c *client) getAddr() (string, error) {
 		// IPv4 requested
 		if !c.req.ipv6 {
 			if net.ParseIP(addr).To4() != nil {
+				c.addr = addr
 				return net.JoinHostPort(addr, port), nil
 			}
 			continue
@@ -170,6 +175,7 @@ func (c *client) getAddr() (string, error) {
 
 		// IPv6 requested
 		if net.ParseIP(addr).To4() == nil {
+			c.addr = addr
 			return net.JoinHostPort(addr, port), nil
 		}
 	}

@@ -14,7 +14,7 @@ func (c *client) prometheus() {
 		switch v.Field(i).Kind() {
 		case reflect.Uint, reflect.Uint8, reflect.Uint32, reflect.Uint64:
 			prometheus.Register(prometheus.NewGaugeFunc(prometheus.GaugeOpts{
-				Name:        "tcpprobe_" + v.Type().Field(i).Tag.Get("name"),
+				Name:        "tp_" + v.Type().Field(i).Tag.Get("name"),
 				Help:        v.Type().Field(i).Tag.Get("help"),
 				ConstLabels: prometheus.Labels{"target": c.target},
 			},
@@ -23,7 +23,7 @@ func (c *client) prometheus() {
 				}))
 		case reflect.Int, reflect.Int8, reflect.Int32, reflect.Int64:
 			prometheus.Register(prometheus.NewGaugeFunc(prometheus.GaugeOpts{
-				Name:        "tcpprobe_" + v.Type().Field(i).Tag.Get("name"),
+				Name:        "tp_" + v.Type().Field(i).Tag.Get("name"),
 				Help:        v.Type().Field(i).Tag.Get("help"),
 				ConstLabels: prometheus.Labels{"target": c.target},
 			},

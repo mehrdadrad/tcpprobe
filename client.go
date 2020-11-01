@@ -51,11 +51,12 @@ type stats struct {
 
 	HTTPStatusCode int   `name:"http_status_code" help:"HTTP 1xx-5xx status code"`
 	HTTPRcvdBytes  int64 `name:"http_rcvd_bytes" help:""`
-	HTTPRequest    int64 `name:"http_request" help:""`
-	HTTPResponse   int64 `name:"http_response" help:""`
+	HTTPRequest    int64 `name:"http_request" help:"HTTP request, the unit is microsecond"`
+	HTTPResponse   int64 `name:"http_response" help:"HTTP response, the unit is microsecond"`
 
-	DNSResolve int64 `name:"dns_resolve" help:""`
-	TCPConnect int64 `name:"tcp_connect" help:""`
+	DNSResolve   int64 `name:"dns_resolve" help:"domain lookup, the unit is microsecond"`
+	TCPConnect   int64 `name:"tcp_connect" help:"TCP connect, the unit is microsecond"`
+	TLSHandshake int64 `name:"tls_handshake" help:"TLS handshake, the unit is microsecond"`
 
 	TCPConnectError int64 `name:"tcp_connect_error" help:""`
 	DNSResolveError int64 `name:"dns_resolve_error" help:""`
@@ -74,7 +75,11 @@ type client struct {
 }
 
 func newClient(req *request, target string) *client {
-	urlSchema, _ := url.Parse(target)
+	urlSchema, err := url.Parse(target)
+	if err != nil {
+		urlSchema = &url.URL{}
+	}
+
 	return &client{
 		target:    target,
 		urlSchema: urlSchema,
@@ -115,7 +120,9 @@ func (c *client) dialTLSContext(ctx context.Context, network, addr string) (net.
 	config := tls.Config{InsecureSkipVerify: c.req.insecure, ServerName: c.serverName()}
 	tlsConn := tls.Client(c.conn, &config)
 
+	t := time.Now()
 	err := tlsConn.Handshake()
+	c.stats.TLSHandshake = time.Since(t).Microseconds()
 
 	return tlsConn, err
 }
@@ -170,7 +177,10 @@ func (c *client) getAddr() (string, error) {
 				c.addr = addr
 				return net.JoinHostPort(addr, port), nil
 			}
-			continue
+
+			if c.req.ipv4 {
+				continue
+			}
 		}
 
 		// IPv6 requested
@@ -221,8 +231,6 @@ func (c *client) httpGet() error {
 }
 
 func (c *client) noRedirect(req *http.Request, via []*http.Request) error {
-	//log.Printf("%#v", via[len(via)-1].URL.Host)
-	// req.URL.Host == via[len(via)-1].URL.Host
 	return fmt.Errorf("%s has been redirected", c.target)
 }
 
@@ -248,13 +256,18 @@ func (c *client) serverName() string {
 }
 
 func (c *client) probe() {
-	counter := 0
+	counter := -1
 
-	for {
+	for counter < c.req.count-1 || c.req.count == 0 {
+		counter++
+
+		if counter != 0 {
+			time.Sleep(c.req.wait)
+		}
+
 		err := c.connect()
 		if err != nil {
 			log.Println(err)
-			time.Sleep(c.req.wait)
 			continue
 		}
 
@@ -271,13 +284,6 @@ func (c *client) probe() {
 		c.printer()
 
 		c.close()
-		counter++
-
-		if counter >= c.req.count && c.req.count != 0 {
-			break
-		}
-
-		time.Sleep(c.req.wait)
 	}
 }
 

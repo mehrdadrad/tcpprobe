@@ -8,6 +8,10 @@ import (
 )
 
 func (c *client) printer() {
+	if c.req.quiet {
+		return
+	}
+
 	if !c.req.json {
 		c.printText()
 	} else {

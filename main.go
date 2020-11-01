@@ -1,11 +1,10 @@
 package main
 
 import (
-	"log"
+	"fmt"
 	"net/http"
 	"os"
 	"sync"
-	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
@@ -15,7 +14,8 @@ func main() {
 
 	req, targets, err := getCli(os.Args)
 	if err != nil {
-		log.Fatal(err)
+		fmt.Println(err)
+		os.Exit(1)
 	}
 
 	wg.Add(len(targets))
@@ -30,10 +30,10 @@ func main() {
 		}()
 	}
 
-	time.Sleep(time.Second)
-
-	http.Handle("/metrics", promhttp.Handler())
-	go http.ListenAndServe(req.promAddr, nil)
+	if !req.promDisabled {
+		http.Handle("/metrics", promhttp.Handler())
+		go http.ListenAndServe(req.promAddr, nil)
+	}
 
 	wg.Wait()
 }

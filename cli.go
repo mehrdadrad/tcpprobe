@@ -13,14 +13,17 @@ import (
 )
 
 type request struct {
-	count      int
-	ipv6       bool
-	http2      bool
-	json       bool
-	insecure   bool
-	serverName string
-	srcAddr    string
-	promAddr   string
+	count        int
+	ipv4         bool
+	ipv6         bool
+	http2        bool
+	json         bool
+	quiet        bool
+	insecure     bool
+	promDisabled bool
+	promAddr     string
+	serverName   string
+	srcAddr      string
 
 	timeout time.Duration
 	wait    time.Duration
@@ -28,18 +31,21 @@ type request struct {
 
 func getCli(args []string) (*request, []string, error) {
 	var (
-		r       *request
+		r       = &request{}
 		targets []string
 	)
 
 	flags := []cli.Flag{
 		&cli.BoolFlag{Name: "ipv6", Aliases: []string{"6"}},
+		&cli.BoolFlag{Name: "ipv4", Aliases: []string{"4"}},
 		&cli.BoolFlag{Name: "http2"},
 		&cli.BoolFlag{Name: "json"},
+		&cli.BoolFlag{Name: "prom-disabled"},
+		&cli.BoolFlag{Name: "quiet", Aliases: []string{"q"}},
 		&cli.BoolFlag{Name: "insecure", Aliases: []string{"i"}},
 		&cli.StringFlag{Name: "server-name", Aliases: []string{"n"}},
 		&cli.StringFlag{Name: "source-addr", Aliases: []string{"S"}},
-		&cli.StringFlag{Name: "prometheus-addr", Aliases: []string{"p"}, Value: ":8081"},
+		&cli.StringFlag{Name: "prom-addr", Aliases: []string{"p"}, Value: ":8081"},
 		&cli.IntFlag{Name: "count", Aliases: []string{"c"}, Value: 1},
 		&cli.DurationFlag{Name: "timeout", Aliases: []string{"t"}, Value: time.Second},
 		&cli.DurationFlag{Name: "wait", Aliases: []string{"w"}, Value: time.Second},
@@ -50,16 +56,19 @@ func getCli(args []string) (*request, []string, error) {
 		Flags: flags,
 		Action: func(c *cli.Context) error {
 			r = &request{
-				ipv6:       c.Bool("ipv6"),
-				http2:      c.Bool("http2"),
-				json:       c.Bool("json"),
-				count:      c.Int("count"),
-				wait:       c.Duration("wait"),
-				timeout:    c.Duration("timeout"),
-				insecure:   c.Bool("insecure"),
-				serverName: c.String("server-name"),
-				srcAddr:    c.String("source-addr"),
-				promAddr:   c.String("prometheus-addr"),
+				ipv4:         c.Bool("ipv4"),
+				ipv6:         c.Bool("ipv6"),
+				http2:        c.Bool("http2"),
+				json:         c.Bool("json"),
+				quiet:        c.Bool("quiet"),
+				insecure:     c.Bool("insecure"),
+				promDisabled: c.Bool("prom-disabled"),
+				promAddr:     c.String("prom-addr"),
+				serverName:   c.String("server-name"),
+				srcAddr:      c.String("source-addr"),
+				count:        c.Int("count"),
+				wait:         c.Duration("wait"),
+				timeout:      c.Duration("timeout"),
 			}
 
 			if c.Bool("metrics") {
@@ -68,7 +77,8 @@ func getCli(args []string) (*request, []string, error) {
 				for i := 0; i < v.NumField(); i++ {
 					fmt.Printf("%s %s\n", v.Type().Field(i).Name, v.Type().Field(i).Tag.Get("help"))
 				}
-				cli.OsExiter(0)
+
+				return nil
 			}
 
 			targets = c.Args().Slice()
@@ -81,8 +91,7 @@ func getCli(args []string) (*request, []string, error) {
 		},
 	}
 
-	cli.AppHelpTemplate = `
-usage: {{.HelpName}} options target(s)
+	cli.AppHelpTemplate = `usage: {{.HelpName}} options target(s)
 
 options:
    {{range .VisibleFlags}}{{.}}
@@ -101,7 +110,6 @@ VERSION:
 		}
 		t := template.Must(template.New("help").Funcs(funcMap).Parse(templ))
 		t.Execute(w, data)
-		cli.OsExiter(0)
 	}
 
 	err := app.Run(args)

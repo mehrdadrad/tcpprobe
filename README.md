@@ -1,1 +1,3 @@
-# tcpprobe
+## TCPProbe
+
+[![Github Actions](https://github.com/mehrdadrad/tcpprobe/workflows/build/badge.svg)](https://github.com/mehrdadrad/tcpprobe/actions?query=workflow%3Abuild) [![Go report](https://goreportcard.com/badge/github.com/mehrdadrad/tcpprobe)](https://goreportcard.com/report/github.com/mehrdadrad/tcpprobe)  [![Coverage Status](https://coveralls.io/repos/github/mehrdadrad/tcpprobe/badge.svg?branch=main)](https://coveralls.io/github/mehrdadrad/tcpprobe?branch=main) [![PkgGoDev](https://pkg.go.dev/badge/github.com/mehrdadrad/tcpprobe?tab=doc)](https://pkg.go.dev/github.com/mehrdadrad/tcpprobe?tab=doc)

@@ -24,6 +24,7 @@ type request struct {
 	promAddr     string
 	serverName   string
 	srcAddr      string
+	filter       string
 
 	timeout time.Duration
 	wait    time.Duration
@@ -36,19 +37,20 @@ func getCli(args []string) (*request, []string, error) {
 	)
 
 	flags := []cli.Flag{
-		&cli.BoolFlag{Name: "ipv6", Aliases: []string{"6"}},
-		&cli.BoolFlag{Name: "ipv4", Aliases: []string{"4"}},
-		&cli.BoolFlag{Name: "http2"},
-		&cli.BoolFlag{Name: "json"},
-		&cli.BoolFlag{Name: "prom-disabled"},
-		&cli.BoolFlag{Name: "quiet", Aliases: []string{"q"}},
-		&cli.BoolFlag{Name: "insecure", Aliases: []string{"i"}},
-		&cli.StringFlag{Name: "server-name", Aliases: []string{"n"}},
-		&cli.StringFlag{Name: "source-addr", Aliases: []string{"S"}},
-		&cli.StringFlag{Name: "prom-addr", Aliases: []string{"p"}, Value: ":8081"},
-		&cli.IntFlag{Name: "count", Aliases: []string{"c"}, Value: 1},
-		&cli.DurationFlag{Name: "timeout", Aliases: []string{"t"}, Value: time.Second},
-		&cli.DurationFlag{Name: "wait", Aliases: []string{"w"}, Value: time.Second},
+		&cli.BoolFlag{Name: "ipv6", Aliases: []string{"6"}, Usage: "connect only to IPv6 address"},
+		&cli.BoolFlag{Name: "ipv4", Aliases: []string{"4"}, Usage: "connect only to IPv4 address"},
+		&cli.IntFlag{Name: "count", Aliases: []string{"c"}, Value: 1, Usage: "stop after sending count requests [0 is unlimited]"},
+		&cli.BoolFlag{Name: "http2", Usage: "force to use HTTP version 2"},
+		&cli.BoolFlag{Name: "json", Usage: "print in json format"},
+		&cli.BoolFlag{Name: "prom-disabled", Usage: "disable prometheus"},
+		&cli.BoolFlag{Name: "quiet", Aliases: []string{"q"}, Usage: "turn off tcpprobe output"},
+		&cli.BoolFlag{Name: "insecure", Aliases: []string{"i"}, Usage: "don't validate the server's certificate"},
+		&cli.StringFlag{Name: "server-name", Aliases: []string{"n"}, Usage: "server name is used to verify the hostname (TLS)"},
+		&cli.StringFlag{Name: "source-addr", Aliases: []string{"S"}, Usage: "source address in outgoing request"},
+		&cli.StringFlag{Name: "prom-addr", Aliases: []string{"p"}, Value: ":8081", Usage: "specify prometheus exporter IP and port"},
+		&cli.StringFlag{Name: "filter", Aliases: []string{"f"}, Usage: "given metric(s) with semicolon delimited"},
+		&cli.DurationFlag{Name: "timeout", Aliases: []string{"t"}, Value: time.Second, Usage: "specify a timeout for dialing to targets"},
+		&cli.DurationFlag{Name: "wait", Aliases: []string{"w"}, Value: time.Second, Usage: "time to wait after each request"},
 		&cli.BoolFlag{Name: "metrics", Usage: "show metric's descriptions"},
 	}
 
@@ -66,6 +68,7 @@ func getCli(args []string) (*request, []string, error) {
 				promAddr:     c.String("prom-addr"),
 				serverName:   c.String("server-name"),
 				srcAddr:      c.String("source-addr"),
+				filter:       c.String("filter"),
 				count:        c.Int("count"),
 				wait:         c.Duration("wait"),
 				timeout:      c.Duration("timeout"),

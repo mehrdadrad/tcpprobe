@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"reflect"
+	"strings"
 )
 
 func (c *client) printer() {
@@ -21,10 +22,13 @@ func (c *client) printer() {
 
 func (c *client) printText() {
 	v := reflect.ValueOf(c.stats)
+	filter := strings.ToLower(c.req.filter)
 
 	fmt.Printf("Target:%s IP:%s Timestamp:%d\n", c.target, c.addr, c.timestamp)
 	for i := 0; i < v.NumField(); i++ {
-		fmt.Printf("%s:%d ", v.Type().Field(i).Name, v.Field(i).Interface())
+		if strings.Contains(filter, strings.ToLower(v.Type().Field(i).Name)) || filter == "" {
+			fmt.Printf("%s:%d ", v.Type().Field(i).Name, v.Field(i).Interface())
+		}
 	}
 	fmt.Println("")
 }

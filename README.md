@@ -1,14 +1,14 @@
 ## TCPProbe
 
-[![Github Actions](https://github.com/mehrdadrad/tcpprobe/workflows/build/badge.svg)](https://github.com/mehrdadrad/tcpprobe/actions?query=workflow%3Abuild) [![Go report](https://goreportcard.com/badge/github.com/mehrdadrad/tcpprobe)](https://goreportcard.com/report/github.com/mehrdadrad/tcpprobe)  [![Coverage Status](https://coveralls.io/repos/github/mehrdadrad/tcpprobe/badge.svg?branch=main)](https://coveralls.io/github/mehrdadrad/tcpprobe?branch=main) [![PkgGoDev](https://pkg.go.dev/badge/github.com/mehrdadrad/tcpprobe?tab=doc)](https://pkg.go.dev/github.com/mehrdadrad/tcpprobe?tab=overview)
+[![Github Actions](https://github.com/mehrdadrad/tcpprobe/workflows/build/badge.svg)](https://github.com/mehrdadrad/tcpprobe/actions?query=workflow%3Abuild) [![Go report](https://goreportcard.com/badge/github.com/mehrdadrad/tcpprobe)](https://goreportcard.com/report/github.com/mehrdadrad/tcpprobe)  [![Coverage Status](https://coveralls.io/repos/github/mehrdadrad/tcpprobe/badge.svg?branch=main&service=github)](https://coveralls.io/github/mehrdadrad/tcpprobe?branch=main) [![PkgGoDev](https://pkg.go.dev/badge/github.com/mehrdadrad/tcpprobe?tab=doc)](https://pkg.go.dev/github.com/mehrdadrad/tcpprobe?tab=overview)
 
 TCPProbe is a tool for network path and service monitoring. It exposes information about socket’s underlying TCP session, TLS and HTTP.
 
 ![tcpprobe](/docs/imgs/tcpprobe.png)
 
 ## Features
-- Expose TCP socket statistics
-- Support TCP/TLS/HTTP
+- TCP socket statistics
+- Supports TCP/TLS/HTTP
 - Prometheus exporter
 - Probing multiple hosts
 
@@ -42,7 +42,7 @@ State:1 CaState:0 Retransmits:0 Probes:0 Backoff:0 Options:4 Rto:202000 Ato:4000
 ```
 #### Docker
 ```
-docker run --rm mehrdadrad/tcpprobe https://www.google.com
+docker run --rm mehrdadrad/tcpprobe 54.153.75.189:22
 ```
 
 #### Docker Compose

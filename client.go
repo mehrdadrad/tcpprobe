@@ -18,17 +18,17 @@ import (
 )
 
 type stats struct {
-	State        uint8  `key:"State" name:"tcpinfo_state" help:"TCP State"`
-	CaState      uint8  `key:"Ca_state" name:"tcpinfo_ca_state" help:""`
-	Retransmits  uint8  `key:"Retransmits" name:"tcpinfo_retransmits" help:""`
+	State        uint8  `key:"State" name:"tcpinfo_state" help:"TCP state"`
+	CaState      uint8  `key:"Ca_state" name:"tcpinfo_ca_state" help:"state of congestion avoidance"`
+	Retransmits  uint8  `key:"Retransmits" name:"tcpinfo_retransmits" help:"number of retranmissions on timeout invoked"`
 	Probes       uint8  `key:"Probes" name:"tcpinfo_probes" help:"consecutive zero window probes that have gone unanswered"`
 	Backoff      uint8  `key:"Backoff" name:"tcpinfo_backoff" help:"used for exponential backoff re-transmission"`
-	Options      uint8  `key:"Options" name:"tcpinfo_options" help:""`
+	Options      uint8  `key:"Options" name:"tcpinfo_options" help:"number of requesting options"`
 	Rto          uint32 `key:"Rto" name:"tcpinfo_rto" help:"tcp re-transmission timeout value, the unit is microsecond"`
 	Ato          uint32 `key:"Ato" name:"tcpinfo_ato" help:"ack timeout, unit is microsecond"`
 	SndMss       uint32 `key:"Snd_mss" name:"tcpinfo_snd_mss" help:"current maximum segment size"`
 	RcvMss       uint32 `key:"Rcv_mss" name:"tcpinfo_rcv_mss" help:"maximum observed segment size from the remote host"`
-	Unacked      uint32 `key:"Unacked" name:"tcpinfo_unacked" help:""`
+	Unacked      uint32 `key:"Unacked" name:"tcpinfo_unacked" help:"number of unack'd segments"`
 	Sacked       uint32 `key:"Sacked" name:"tcpinfo_sacked" help:"scoreboard segment marked SACKED by sack blocks accounting for the pipe algorithm"`
 	Lost         uint32 `key:"Lost" name:"tcpinfo_lost" help:"scoreboard segments marked lost by loss detection heuristics accounting for the pipe algorithm"`
 	Retrans      uint32 `key:"Retrans" name:"tcpinfo_retrans" help:"how many times the retran occurs"`
@@ -42,15 +42,15 @@ type stats struct {
 	Rtt          uint32 `key:"Rtt" name:"tcpinfo_rtt" help:"smoothed round trip time"`
 	Rttvar       uint32 `key:"Rttvar" name:"tcpinfo_rtt_var" help:"RTT variance"`
 	SndSsthresh  uint32 `key:"Snd_ssthresh" name:"tcpinfo_snd_ss_thresh" help:"slow start threshold"`
-	SndCwnd      uint32 `key:"Snd_cwnd" name:"tcpinfo_snd_cwnd" help:""`
-	Advmss       uint32 `key:"Advmss" name:"tcpinfo_adv_mss" help:""`
-	Reordering   uint32 `key:"Reordering" name:"tcpinfo_reordering" help:""`
+	SndCwnd      uint32 `key:"Snd_cwnd" name:"tcpinfo_snd_cwnd" help:"congestion window size"`
+	Advmss       uint32 `key:"Advmss" name:"tcpinfo_adv_mss" help:"advertised maximum segment size"`
+	Reordering   uint32 `key:"Reordering" name:"tcpinfo_reordering" help:"number of reordered segments allowed"`
 	RcvRtt       uint32 `key:"Rcv_rtt" name:"tcpinfo_rcv_rtt" help:"receiver side RTT estimate"`
 	RcvSpace     uint32 `key:"Rcv_space" name:"tcpinfo_rcv_space" help:"space reserved for the receive queue"`
 	TotalRetrans uint32 `key:"Total_retrans" name:"tcpinfo_total_retrans" help:"total number of segments containing retransmitted data"`
 
 	HTTPStatusCode int   `name:"http_status_code" help:"HTTP 1xx-5xx status code"`
-	HTTPRcvdBytes  int64 `name:"http_rcvd_bytes" help:""`
+	HTTPRcvdBytes  int64 `name:"http_rcvd_bytes" help:"HTTP bytes received"`
 	HTTPRequest    int64 `name:"http_request" help:"HTTP request, the unit is microsecond"`
 	HTTPResponse   int64 `name:"http_response" help:"HTTP response, the unit is microsecond"`
 
@@ -58,8 +58,8 @@ type stats struct {
 	TCPConnect   int64 `name:"tcp_connect" help:"TCP connect, the unit is microsecond"`
 	TLSHandshake int64 `name:"tls_handshake" help:"TLS handshake, the unit is microsecond"`
 
-	TCPConnectError int64 `name:"tcp_connect_error" help:""`
-	DNSResolveError int64 `name:"dns_resolve_error" help:""`
+	TCPConnectError int64 `name:"tcp_connect_error" help:"total TCP connect error"`
+	DNSResolveError int64 `name:"dns_resolve_error" help:"total DNS resolve error"`
 }
 
 type client struct {

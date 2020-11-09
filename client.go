@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -10,6 +11,7 @@ import (
 	"net"
 	"net/http"
 	"net/url"
+	"os"
 	"reflect"
 	"strings"
 	"syscall"
@@ -97,10 +99,14 @@ func (c *client) connect() error {
 		return err
 	}
 
-	t := time.Now()
-	d := net.Dialer{LocalAddr: getSrcAddr(c.req.srcAddr)}
+	d := net.Dialer{
+		LocalAddr: getSrcAddr(c.req.srcAddr),
+		Control:   c.control,
+	}
 	ctx, cancel := context.WithTimeout(context.Background(), c.req.timeout)
 	defer cancel()
+
+	t := time.Now()
 	c.conn, err = d.DialContext(ctx, "tcp", addr)
 	if err != nil {
 		c.stats.TCPConnectError++
@@ -125,6 +131,33 @@ func (c *client) dialTLSContext(ctx context.Context, network, addr string) (net.
 	c.stats.TLSHandshake = time.Since(t).Microseconds()
 
 	return tlsConn, err
+}
+
+func (c *client) control(network string, address string, conn syscall.RawConn) error {
+	return conn.Control(func(fd uintptr) {
+		err := syscall.SetsockoptInt(int(fd), syscall.IPPROTO_IP, syscall.IP_TOS, c.req.soIPTOS)
+		if err != nil {
+			log.Println(os.NewSyscallError("setsockopt", err))
+			return
+		}
+		err = syscall.SetsockoptInt(int(fd), syscall.IPPROTO_IP, syscall.IP_TTL, c.req.soIPTTL)
+		if err != nil {
+			log.Println(os.NewSyscallError("setsockopt", err))
+			return
+		}
+		err = syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_PRIORITY, c.req.soPriority)
+		if err != nil {
+			log.Println(os.NewSyscallError("setsockopt", err))
+			return
+		}
+		err = syscall.SetsockoptInt(int(fd), syscall.IPPROTO_TCP, syscall.TCP_NODELAY, boolToInt(!c.req.soTCPNoDelay))
+		if err != nil {
+			log.Println(os.NewSyscallError("setsockopt", err))
+			return
+		}
+	})
+
+	return nil
 }
 
 func (c *client) getHostPort() (string, string, error) {
@@ -300,7 +333,7 @@ func getSrcAddr(src string) net.Addr {
 func (c *client) getTCPInfo() error {
 	tcpConn := c.conn.(*net.TCPConn)
 	if tcpConn == nil {
-		return fmt.Errorf("tcp conn is nil")
+		return errors.New("tcp conn is nil")
 	}
 
 	file, err := tcpConn.File()
@@ -338,4 +371,11 @@ func (c *client) getTCPInfo() error {
 func (c *client) reset() {
 	s := reflect.ValueOf(&c.stats).Elem()
 	s.Set(reflect.Zero(s.Type()))
+}
+
+func boolToInt(b bool) int {
+	if b {
+		return 1
+	}
+	return 0
 }

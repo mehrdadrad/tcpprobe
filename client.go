@@ -156,8 +156,6 @@ func (c *client) control(network string, address string, conn syscall.RawConn) e
 			return
 		}
 	})
-
-	return nil
 }
 
 func (c *client) getHostPort() (string, string, error) {

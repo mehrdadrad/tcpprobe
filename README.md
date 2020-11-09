@@ -32,6 +32,10 @@ options:
    --timeout value, -t value            specify a timeout for dialing to targets (default: 1s)
    --wait value, -w value               time to wait after each request (default: 1s)
    --metrics                            show metric's descriptions (default: false)
+   --tos value, -z value                set the IP type of service (default: 128)
+   --ttl value, -m value                set the IP time to live (default: 64)
+   --socket-priority value, -r value    set queuing discipline (default: 2)
+   --tcp-nodelay-disabled, -o           disable Nagle's algorithm (default: false)
    --help, -h                           show help (default: false)
 ```
 #### Command line

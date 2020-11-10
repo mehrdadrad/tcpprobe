@@ -135,27 +135,23 @@ func (c *client) dialTLSContext(ctx context.Context, network, addr string) (net.
 
 func (c *client) control(network string, address string, conn syscall.RawConn) error {
 	return conn.Control(func(fd uintptr) {
-		err := syscall.SetsockoptInt(int(fd), syscall.IPPROTO_IP, syscall.IP_TOS, c.req.soIPTOS)
-		if err != nil {
-			log.Println(os.NewSyscallError("setsockopt", err))
-			return
-		}
-		err = syscall.SetsockoptInt(int(fd), syscall.IPPROTO_IP, syscall.IP_TTL, c.req.soIPTTL)
-		if err != nil {
-			log.Println(os.NewSyscallError("setsockopt", err))
-			return
-		}
-		err = syscall.SetsockoptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_PRIORITY, c.req.soPriority)
-		if err != nil {
-			log.Println(os.NewSyscallError("setsockopt", err))
-			return
-		}
-		err = syscall.SetsockoptInt(int(fd), syscall.IPPROTO_TCP, syscall.TCP_NODELAY, boolToInt(!c.req.soTCPNoDelay))
-		if err != nil {
-			log.Println(os.NewSyscallError("setsockopt", err))
-			return
-		}
+		setSocketOptInt(int(fd), syscall.IPPROTO_IP, syscall.IP_TOS, c.req.soIPTOS, false)
+		setSocketOptInt(int(fd), syscall.IPPROTO_IP, syscall.IP_TTL, c.req.soIPTTL, false)
+		setSocketOptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_PRIORITY, c.req.soPriority, false)
+		setSocketOptInt(int(fd), syscall.IPPROTO_TCP, syscall.TCP_NODELAY, boolToInt(!c.req.soTCPNoDelay), true)
+		setSocketOptInt(int(fd), syscall.IPPROTO_TCP, syscall.TCP_MAXSEG, c.req.soMaxSegSize, false)
 	})
+}
+
+func setSocketOptInt(fd int, level int, opt int, value int, zeroExc bool) {
+	if value == 0 && !zeroExc {
+		return
+	}
+
+	err := syscall.SetsockoptInt(fd, level, opt, value)
+	if err != nil {
+		log.Println(os.NewSyscallError("setsockopt", err))
+	}
 }
 
 func (c *client) getHostPort() (string, string, error) {
@@ -364,11 +360,6 @@ func (c *client) getTCPInfo() error {
 	}
 
 	return nil
-}
-
-func (c *client) reset() {
-	s := reflect.ValueOf(&c.stats).Elem()
-	s.Set(reflect.Zero(s.Type()))
 }
 
 func boolToInt(b bool) int {

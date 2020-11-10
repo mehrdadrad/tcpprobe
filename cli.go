@@ -29,6 +29,7 @@ type request struct {
 	soIPTOS      int
 	soIPTTL      int
 	soPriority   int
+	soMaxSegSize int
 	soTCPNoDelay bool
 
 	timeout time.Duration
@@ -56,11 +57,12 @@ func getCli(args []string) (*request, []string, error) {
 		&cli.StringFlag{Name: "filter", Aliases: []string{"f"}, Usage: "given metric(s) with semicolon delimited"},
 		&cli.DurationFlag{Name: "timeout", Aliases: []string{"t"}, Value: time.Second, Usage: "specify a timeout for dialing to targets"},
 		&cli.DurationFlag{Name: "wait", Aliases: []string{"w"}, Value: time.Second, Usage: "time to wait after each request"},
-		&cli.BoolFlag{Name: "metrics", Usage: "show metric's descriptions"},
-		&cli.IntFlag{Name: "tos", Aliases: []string{"z"}, Value: 128, Usage: "set the IP type of service"},
-		&cli.IntFlag{Name: "ttl", Aliases: []string{"m"}, Value: 64, Usage: "set the IP time to live"},
-		&cli.IntFlag{Name: "socket-priority", Aliases: []string{"r"}, Value: 2, Usage: "set queuing discipline"},
+		&cli.IntFlag{Name: "tos", Aliases: []string{"z"}, DefaultText: "depends on the OS", Usage: "set the IP type of service"},
+		&cli.IntFlag{Name: "ttl", Aliases: []string{"m"}, DefaultText: "depends on the OS", Usage: "set the IP time to live"},
+		&cli.IntFlag{Name: "socket-priority", Aliases: []string{"r"}, DefaultText: "depends on the OS", Usage: "set queuing discipline"},
+		&cli.IntFlag{Name: "mss", Aliases: []string{"M"}, DefaultText: "depends on the OS", Usage: "TCP max segment size"},
 		&cli.BoolFlag{Name: "tcp-nodelay-disabled", Aliases: []string{"o"}, Usage: "disable Nagle's algorithm"},
+		&cli.BoolFlag{Name: "metrics", Usage: "show metric's descriptions"},
 	}
 
 	app := &cli.App{
@@ -83,6 +85,7 @@ func getCli(args []string) (*request, []string, error) {
 				soIPTOS:      c.Int("tos"),
 				soIPTTL:      c.Int("ttl"),
 				soPriority:   c.Int("socket-priority"),
+				soMaxSegSize: c.Int("mss"),
 				soTCPNoDelay: c.Bool("tcp-nodelay-disabled"),
 
 				wait:    c.Duration("wait"),

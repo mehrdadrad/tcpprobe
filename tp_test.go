@@ -23,14 +23,14 @@ func TestClient(t *testing.T) {
 	}))
 
 	r := request{
-		count:    1,
+		count:    2,
 		quiet:    true,
 		timeout:  time.Second * 2,
 		insecure: true,
 	}
 
 	c := newClient(&r, ts.URL)
-	assert.Equal(t, 1, c.req.count)
+	assert.Equal(t, 2, c.req.count)
 
 	err := c.connect()
 	assert.NoError(t, err)
@@ -201,6 +201,36 @@ func TestPrintJson(t *testing.T) {
 
 	buf := make([]byte, 730)
 	io.ReadFull(r, buf)
+
+	os.Stdout = stdout
+}
+
+func TestBoolToInt(t *testing.T) {
+	assert.Equal(t, 1, boolToInt(true))
+	assert.Equal(t, 0, boolToInt(false))
+}
+
+func TestNoRedirect(t *testing.T) {
+	c := &client{}
+	assert.Error(t, c.noRedirect(nil, nil))
+}
+
+func TestMain(t *testing.T) {
+	stdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Hello, TCPProbe")
+	}))
+	os.Args = []string{"tcpprobe", "-c", "1", "-insecure", ts.URL}
+	main()
+
+	buf := new(bytes.Buffer)
+	io.CopyN(buf, r, 500)
+
+	assert.Contains(t, buf.String(), "Target:https://127.0.0.1")
+	assert.Contains(t, buf.String(), "HTTPStatusCode:200")
 
 	os.Stdout = stdout
 }

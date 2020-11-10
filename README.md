@@ -1,6 +1,6 @@
 ## TCPProbe
 
-[![Github Actions](https://github.com/mehrdadrad/tcpprobe/workflows/build/badge.svg)](https://github.com/mehrdadrad/tcpprobe/actions?query=workflow%3Abuild) [![Go report](https://goreportcard.com/badge/github.com/mehrdadrad/tcpprobe)](https://goreportcard.com/report/github.com/mehrdadrad/tcpprobe)  [![Coverage Status](https://coveralls.io/repos/github/mehrdadrad/tcpprobe/badge.svg?branch=main&service=github)](https://coveralls.io/github/mehrdadrad/tcpprobe?branch=main) [![PkgGoDev](https://pkg.go.dev/badge/github.com/mehrdadrad/tcpprobe?tab=doc)](https://pkg.go.dev/github.com/mehrdadrad/tcpprobe?tab=overview)
+[![Github Actions](https://github.com/mehrdadrad/tcpprobe/workflows/build/badge.svg)](https://github.com/mehrdadrad/tcpprobe/actions?query=workflow%3Abuild) [![Go report](https://goreportcard.com/badge/github.com/mehrdadrad/tcpprobe)](https://goreportcard.com/report/github.com/mehrdadrad/tcpprobe)  [![Coverage Status](https://coveralls.io/repos/github/mehrdadrad/tcpprobe/badge.svg?branch=main)](https://coveralls.io/github/mehrdadrad/tcpprobe?branch=main) [![PkgGoDev](https://pkg.go.dev/badge/github.com/mehrdadrad/tcpprobe?tab=doc)](https://pkg.go.dev/github.com/mehrdadrad/tcpprobe?tab=overview)
 
 TCPProbe is a tool for network path and service monitoring. It exposes information about socket’s underlying TCP session, TLS and HTTP.
 
@@ -39,7 +39,7 @@ options:
    --metrics                            show metric's descriptions (default: false)
    --help, -h                           show help (default: false)
 ```
-#### Command line
+#### Command line ([download Linux binary](https://github.com/mehrdadrad/tcpprobe/releases/latest/download/tcpprobe)) 
 ```
 tcpprobe https://www.google.com
 Target:https://www.google.com IP:172.217.5.68 Timestamp:1604289587

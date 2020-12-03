@@ -1,12 +1,6 @@
 FROM golang:alpine as builder
-
-WORKDIR /go/src/
-
-RUN mkdir -p github.com/mehrdadrad/tcpprobe
-COPY . github.com/mehrdadrad/tcpprobe
-
 WORKDIR /go/src/github.com/mehrdadrad/tcpprobe
-
+COPY . .
 RUN CGO_ENABLED=0 go build
 
 FROM alpine 

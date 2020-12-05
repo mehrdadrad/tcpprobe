@@ -182,11 +182,25 @@ func TestPrintText(t *testing.T) {
 	os.Stdout = w
 
 	c := &client{stats: stats{Rtt: 5}, req: &request{filter: "rtt"}}
-	c.printer()
+	c.printer(0)
 
 	buf := new(bytes.Buffer)
 	io.CopyN(buf, r, 29)
 	assert.Contains(t, buf.String(), "Rtt:5")
+
+	os.Stdout = stdout
+}
+
+func TestPrintJsonPretty(t *testing.T) {
+	stdout := os.Stdout
+	r, w, _ := os.Pipe()
+	os.Stdout = w
+
+	c := &client{stats: stats{}, req: &request{jsonPretty: true}}
+	c.printer(0)
+
+	buf := make([]byte, 730)
+	io.ReadFull(r, buf)
 
 	os.Stdout = stdout
 }
@@ -197,9 +211,9 @@ func TestPrintJson(t *testing.T) {
 	os.Stdout = w
 
 	c := &client{stats: stats{}, req: &request{json: true}}
-	c.printer()
+	c.printer(0)
 
-	buf := make([]byte, 730)
+	buf := make([]byte, 330)
 	io.ReadFull(r, buf)
 
 	os.Stdout = stdout

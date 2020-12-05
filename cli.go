@@ -18,6 +18,7 @@ type request struct {
 	ipv6         bool
 	http2        bool
 	json         bool
+	jsonPretty   bool
 	quiet        bool
 	insecure     bool
 	promDisabled bool
@@ -47,9 +48,7 @@ func getCli(args []string) (*request, []string, error) {
 		&cli.BoolFlag{Name: "ipv4", Aliases: []string{"4"}, Usage: "connect only to IPv4 address"},
 		&cli.IntFlag{Name: "count", Aliases: []string{"c"}, Value: 1, Usage: "stop after sending count requests [0 is unlimited]"},
 		&cli.BoolFlag{Name: "http2", Usage: "force to use HTTP version 2"},
-		&cli.BoolFlag{Name: "json", Usage: "print in json format"},
 		&cli.BoolFlag{Name: "prom-disabled", Usage: "disable prometheus"},
-		&cli.BoolFlag{Name: "quiet", Aliases: []string{"q"}, Usage: "turn off tcpprobe output"},
 		&cli.BoolFlag{Name: "insecure", Aliases: []string{"i"}, Usage: "don't validate the server's certificate"},
 		&cli.StringFlag{Name: "server-name", Aliases: []string{"n"}, Usage: "server name is used to verify the hostname (TLS)"},
 		&cli.StringFlag{Name: "source-addr", Aliases: []string{"S"}, Usage: "source address in outgoing request"},
@@ -62,6 +61,9 @@ func getCli(args []string) (*request, []string, error) {
 		&cli.IntFlag{Name: "socket-priority", Aliases: []string{"r"}, DefaultText: "depends on the OS", Usage: "set queuing discipline"},
 		&cli.IntFlag{Name: "mss", Aliases: []string{"M"}, DefaultText: "depends on the OS", Usage: "TCP max segment size"},
 		&cli.BoolFlag{Name: "tcp-nodelay-disabled", Aliases: []string{"o"}, Usage: "disable Nagle's algorithm"},
+		&cli.BoolFlag{Name: "quiet", Aliases: []string{"q"}, Usage: "turn off tcpprobe output"},
+		&cli.BoolFlag{Name: "json", Usage: "print in json format"},
+		&cli.BoolFlag{Name: "json-pretty", Usage: "pretty print in json format"},
 		&cli.BoolFlag{Name: "metrics", Usage: "show metric's descriptions"},
 	}
 
@@ -73,6 +75,7 @@ func getCli(args []string) (*request, []string, error) {
 				ipv6:         c.Bool("ipv6"),
 				http2:        c.Bool("http2"),
 				json:         c.Bool("json"),
+				jsonPretty:   c.Bool("json-pretty"),
 				quiet:        c.Bool("quiet"),
 				insecure:     c.Bool("insecure"),
 				promDisabled: c.Bool("prom-disabled"),

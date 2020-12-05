@@ -312,7 +312,7 @@ func (c *client) probe() {
 			log.Println(err)
 		}
 
-		c.printer()
+		c.printer(counter)
 
 		c.close()
 	}

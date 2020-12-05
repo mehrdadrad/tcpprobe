@@ -185,7 +185,7 @@ func TestPrintText(t *testing.T) {
 	c.printer(0)
 
 	buf := new(bytes.Buffer)
-	io.CopyN(buf, r, 29)
+	io.CopyN(buf, r, 36)
 	assert.Contains(t, buf.String(), "Rtt:5")
 
 	os.Stdout = stdout
@@ -200,7 +200,8 @@ func TestPrintJsonPretty(t *testing.T) {
 	c.printer(0)
 
 	buf := make([]byte, 730)
-	io.ReadFull(r, buf)
+	n, _ := io.ReadFull(r, buf)
+	assert.Equal(t, 730, n)
 
 	os.Stdout = stdout
 }
@@ -214,7 +215,8 @@ func TestPrintJson(t *testing.T) {
 	c.printer(0)
 
 	buf := make([]byte, 330)
-	io.ReadFull(r, buf)
+	n, _ := io.ReadFull(r, buf)
+	assert.Equal(t, 330, n)
 
 	os.Stdout = stdout
 }

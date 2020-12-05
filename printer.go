@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net"
 	"reflect"
 	"strings"
 )
@@ -24,7 +25,8 @@ func (c *client) printText() {
 	v := reflect.ValueOf(c.stats)
 	filter := strings.ToLower(c.req.filter)
 
-	fmt.Printf("Target:%s IP:%s Timestamp:%d\n", c.target, c.addr, c.timestamp)
+	ip, _, _ := net.SplitHostPort(c.addr)
+	fmt.Printf("Target:%s IP:%s Timestamp:%d\n", c.target, ip, c.timestamp)
 	for i := 0; i < v.NumField(); i++ {
 		if strings.Contains(filter, strings.ToLower(v.Type().Field(i).Name)) || filter == "" {
 			fmt.Printf("%s:%d ", v.Type().Field(i).Name, v.Field(i).Interface())

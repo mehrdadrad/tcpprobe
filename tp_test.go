@@ -234,3 +234,8 @@ func TestMain(t *testing.T) {
 
 	os.Stdout = stdout
 }
+
+func TestIsIPAddr(t *testing.T) {
+	assert.True(t, isIPAddr("8.8.8.8"))
+	assert.False(t, isIPAddr("www.yahoo.com"))
+}

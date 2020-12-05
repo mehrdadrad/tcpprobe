@@ -99,6 +99,8 @@ func (c *client) connect() error {
 		return err
 	}
 
+	c.addr = addr
+
 	d := net.Dialer{
 		LocalAddr: getSrcAddr(c.req.srcAddr),
 		Control:   c.control,
@@ -189,6 +191,10 @@ func (c *client) getAddr() (string, error) {
 		return "", err
 	}
 
+	if ok := isIPAddr(host); ok {
+		return net.JoinHostPort(host, port), nil
+	}
+
 	t := time.Now()
 	addrs, err := net.LookupHost(host)
 	if err != nil {
@@ -201,7 +207,6 @@ func (c *client) getAddr() (string, error) {
 		// IPv4 requested
 		if !c.req.ipv6 {
 			if net.ParseIP(addr).To4() != nil {
-				c.addr = addr
 				return net.JoinHostPort(addr, port), nil
 			}
 
@@ -212,7 +217,6 @@ func (c *client) getAddr() (string, error) {
 
 		// IPv6 requested
 		if net.ParseIP(addr).To4() == nil {
-			c.addr = addr
 			return net.JoinHostPort(addr, port), nil
 		}
 	}
@@ -367,4 +371,13 @@ func boolToInt(b bool) int {
 		return 1
 	}
 	return 0
+}
+
+func isIPAddr(host string) bool {
+	addr := net.ParseIP(host)
+	if addr != nil {
+		return true
+	}
+
+	return false
 }

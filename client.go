@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"errors"
@@ -50,6 +51,8 @@ type stats struct {
 	RcvRtt       uint32 `key:"Rcv_rtt" name:"tcpinfo_rcv_rtt" help:"receiver side RTT estimate"`
 	RcvSpace     uint32 `key:"Rcv_space" name:"tcpinfo_rcv_space" help:"space reserved for the receive queue"`
 	TotalRetrans uint32 `key:"Total_retrans" name:"tcpinfo_total_retrans" help:"total number of segments containing retransmitted data"`
+
+	TCPCongesAlg string `help:"TCP network congestion-avoidance algorithm"`
 
 	HTTPStatusCode int   `name:"http_status_code" help:"HTTP 1xx-5xx status code"`
 	HTTPRcvdBytes  int64 `name:"http_rcvd_bytes" help:"HTTP bytes received"`
@@ -140,8 +143,11 @@ func (c *client) control(network string, address string, conn syscall.RawConn) e
 		setSocketOptInt(int(fd), syscall.IPPROTO_IP, syscall.IP_TOS, c.req.soIPTOS, false)
 		setSocketOptInt(int(fd), syscall.IPPROTO_IP, syscall.IP_TTL, c.req.soIPTTL, false)
 		setSocketOptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_PRIORITY, c.req.soPriority, false)
+		setSocketOptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_SNDBUF, c.req.soSndBuf, false)
+		setSocketOptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_RCVBUF, c.req.soRcvBuf, false)
 		setSocketOptInt(int(fd), syscall.IPPROTO_TCP, syscall.TCP_NODELAY, boolToInt(!c.req.soTCPNoDelay), true)
 		setSocketOptInt(int(fd), syscall.IPPROTO_TCP, syscall.TCP_MAXSEG, c.req.soMaxSegSize, false)
+		syscall.SetsockoptString(int(fd), syscall.IPPROTO_TCP, syscall.TCP_CONGESTION, c.req.soCongestion)
 	})
 }
 
@@ -349,6 +355,17 @@ func (c *client) getTCPInfo() error {
 	if e != 0 {
 		return fmt.Errorf("syscall err number=%d", e)
 	}
+
+	ca := make([]byte, 10)
+	size = uint32(len(ca))
+
+	_, _, e = syscall.Syscall6(syscall.SYS_GETSOCKOPT, fd, syscall.IPPROTO_TCP, syscall.TCP_CONGESTION,
+		uintptr(unsafe.Pointer(&ca[0])), uintptr(unsafe.Pointer(&size)), 0)
+	if e != 0 {
+		return fmt.Errorf("syscall err number=%d", e)
+	}
+
+	c.stats.TCPCongesAlg = string(bytes.Trim(ca, "\x00"))
 
 	src := reflect.ValueOf(&tcpInfo).Elem()
 	dst := reflect.ValueOf(&c.stats).Elem()

@@ -31,6 +31,9 @@ type request struct {
 	soIPTTL      int
 	soPriority   int
 	soMaxSegSize int
+	soSndBuf     int
+	soRcvBuf     int
+	soCongestion string
 	soTCPNoDelay bool
 
 	timeout time.Duration
@@ -60,6 +63,9 @@ func getCli(args []string) (*request, []string, error) {
 		&cli.IntFlag{Name: "ttl", Aliases: []string{"m"}, DefaultText: "depends on the OS", Usage: "set the IP time to live"},
 		&cli.IntFlag{Name: "socket-priority", Aliases: []string{"r"}, DefaultText: "depends on the OS", Usage: "set queuing discipline"},
 		&cli.IntFlag{Name: "mss", Aliases: []string{"M"}, DefaultText: "depends on the OS", Usage: "TCP max segment size"},
+		&cli.StringFlag{Name: "congestion-alg", Aliases: []string{}, DefaultText: "depends on the OS", Usage: "TCP congestion control algorithm"},
+		&cli.IntFlag{Name: "send-buffer", Aliases: []string{}, DefaultText: "depends on the OS", Usage: "maximum socket send buffer in bytes"},
+		&cli.IntFlag{Name: "rcvd-buffer", Aliases: []string{}, DefaultText: "depends on the OS", Usage: "maximum socket receive buffer in bytes"},
 		&cli.BoolFlag{Name: "tcp-nodelay-disabled", Aliases: []string{"o"}, Usage: "disable Nagle's algorithm"},
 		&cli.BoolFlag{Name: "quiet", Aliases: []string{"q"}, Usage: "turn off tcpprobe output"},
 		&cli.BoolFlag{Name: "json", Usage: "print in json format"},
@@ -89,6 +95,9 @@ func getCli(args []string) (*request, []string, error) {
 				soIPTTL:      c.Int("ttl"),
 				soPriority:   c.Int("socket-priority"),
 				soMaxSegSize: c.Int("mss"),
+				soSndBuf:     c.Int("send-buffer"),
+				soRcvBuf:     c.Int("rcvd-buffer"),
+				soCongestion: c.String("congestion-alg"),
 				soTCPNoDelay: c.Bool("tcp-nodelay-disabled"),
 
 				wait:    c.Duration("wait"),

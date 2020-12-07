@@ -8,7 +8,6 @@ TCPProbe is a tool for network path and service monitoring. It exposes informati
 
 ## Features
 - TCP socket statistics
-- Supports TCP/TLS/HTTP
 - TCP/IP customization
 - Prometheus exporter
 - Probing multiple hosts
@@ -27,8 +26,9 @@ options:
    --source-addr value, -S value        source address in outgoing request
    --prom-addr value, -p value          specify prometheus exporter IP and port (default: ":8081")
    --filter value, -f value             given metric(s) with semicolon delimited
-   --count value, -c value              stop after sending count requests (default: 1)
-   --timeout value, -t value            specify a timeout for dialing to targets (default: 1s)
+   --count value, -c value              stop after sending count requests [0 is unlimited] (default: 0)
+   --timeout value, -t value            specify a timeout for dialing to targets (default: 5s)
+   --http-timeout value                 specify a timeout for HTTP (default: 30s)
    --wait value, -w value               time to wait after each request (default: 1s)
    --tos value, -z value                set the IP type of service (default: depends on the OS)
    --ttl value, -m value                set the IP time to live (default: depends on the OS)

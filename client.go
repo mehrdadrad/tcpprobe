@@ -242,6 +242,7 @@ func (c *client) httpGet() error {
 	}
 
 	httpClient := &http.Client{
+		Timeout:       c.req.timeoutHTTP,
 		Transport:     tr,
 		CheckRedirect: c.noRedirect,
 	}

@@ -36,8 +36,9 @@ type request struct {
 	soCongestion string
 	soTCPNoDelay bool
 
-	timeout time.Duration
-	wait    time.Duration
+	timeout     time.Duration
+	timeoutHTTP time.Duration
+	wait        time.Duration
 }
 
 func getCli(args []string) (*request, []string, error) {
@@ -49,7 +50,7 @@ func getCli(args []string) (*request, []string, error) {
 	flags := []cli.Flag{
 		&cli.BoolFlag{Name: "ipv6", Aliases: []string{"6"}, Usage: "connect only to IPv6 address"},
 		&cli.BoolFlag{Name: "ipv4", Aliases: []string{"4"}, Usage: "connect only to IPv4 address"},
-		&cli.IntFlag{Name: "count", Aliases: []string{"c"}, Value: 1, Usage: "stop after sending count requests [0 is unlimited]"},
+		&cli.IntFlag{Name: "count", Aliases: []string{"c"}, Value: 0, Usage: "stop after sending count requests [0 is unlimited]"},
 		&cli.BoolFlag{Name: "http2", Usage: "force to use HTTP version 2"},
 		&cli.BoolFlag{Name: "prom-disabled", Usage: "disable prometheus"},
 		&cli.BoolFlag{Name: "insecure", Aliases: []string{"i"}, Usage: "don't validate the server's certificate"},
@@ -57,7 +58,8 @@ func getCli(args []string) (*request, []string, error) {
 		&cli.StringFlag{Name: "source-addr", Aliases: []string{"S"}, Usage: "source address in outgoing request"},
 		&cli.StringFlag{Name: "prom-addr", Aliases: []string{"p"}, Value: ":8081", Usage: "specify prometheus exporter IP and port"},
 		&cli.StringFlag{Name: "filter", Aliases: []string{"f"}, Usage: "given metric(s) with semicolon delimited"},
-		&cli.DurationFlag{Name: "timeout", Aliases: []string{"t"}, Value: time.Second, Usage: "specify a timeout for dialing to targets"},
+		&cli.DurationFlag{Name: "timeout", Aliases: []string{"t"}, Value: 5 * time.Second, Usage: "specify a timeout for dialing to targets"},
+		&cli.DurationFlag{Name: "http-timeout", Aliases: []string{}, Value: 30 * time.Second, Usage: "specify a timeout for HTTP"},
 		&cli.DurationFlag{Name: "wait", Aliases: []string{"w"}, Value: time.Second, Usage: "time to wait after each request"},
 		&cli.IntFlag{Name: "tos", Aliases: []string{"z"}, DefaultText: "depends on the OS", Usage: "set the IP type of service"},
 		&cli.IntFlag{Name: "ttl", Aliases: []string{"m"}, DefaultText: "depends on the OS", Usage: "set the IP time to live"},
@@ -100,8 +102,9 @@ func getCli(args []string) (*request, []string, error) {
 				soCongestion: c.String("congestion-alg"),
 				soTCPNoDelay: c.Bool("tcp-nodelay-disabled"),
 
-				wait:    c.Duration("wait"),
-				timeout: c.Duration("timeout"),
+				wait:        c.Duration("wait"),
+				timeout:     c.Duration("timeout"),
+				timeoutHTTP: c.Duration("http-timeout"),
 			}
 
 			if c.Bool("metrics") {

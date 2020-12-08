@@ -27,14 +27,15 @@ type request struct {
 	srcAddr      string
 	filter       string
 
-	soIPTOS      int
-	soIPTTL      int
-	soPriority   int
-	soMaxSegSize int
-	soSndBuf     int
-	soRcvBuf     int
-	soCongestion string
-	soTCPNoDelay bool
+	soIPTOS       int
+	soIPTTL       int
+	soPriority    int
+	soMaxSegSize  int
+	soSndBuf      int
+	soRcvBuf      int
+	soCongestion  string
+	soTCPNoDelay  bool
+	soTCPQuickACK bool
 
 	timeout     time.Duration
 	timeoutHTTP time.Duration
@@ -69,6 +70,7 @@ func getCli(args []string) (*request, []string, error) {
 		&cli.IntFlag{Name: "send-buffer", Aliases: []string{}, DefaultText: "depends on the OS", Usage: "maximum socket send buffer in bytes"},
 		&cli.IntFlag{Name: "rcvd-buffer", Aliases: []string{}, DefaultText: "depends on the OS", Usage: "maximum socket receive buffer in bytes"},
 		&cli.BoolFlag{Name: "tcp-nodelay-disabled", Aliases: []string{"o"}, Usage: "disable Nagle's algorithm"},
+		&cli.BoolFlag{Name: "tcp-quickack-disabled", Aliases: []string{"k"}, Usage: "disable quickack mode"},
 		&cli.BoolFlag{Name: "quiet", Aliases: []string{"q"}, Usage: "turn off tcpprobe output"},
 		&cli.BoolFlag{Name: "json", Usage: "print in json format"},
 		&cli.BoolFlag{Name: "json-pretty", Usage: "pretty print in json format"},

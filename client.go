@@ -146,6 +146,7 @@ func (c *client) control(network string, address string, conn syscall.RawConn) e
 		setSocketOptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_SNDBUF, c.req.soSndBuf, false)
 		setSocketOptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_RCVBUF, c.req.soRcvBuf, false)
 		setSocketOptInt(int(fd), syscall.IPPROTO_TCP, syscall.TCP_NODELAY, boolToInt(!c.req.soTCPNoDelay), true)
+		setSocketOptInt(int(fd), syscall.IPPROTO_TCP, syscall.TCP_QUICKACK, boolToInt(!c.req.soTCPQuickACK), true)
 		setSocketOptInt(int(fd), syscall.IPPROTO_TCP, syscall.TCP_MAXSEG, c.req.soMaxSegSize, false)
 		syscall.SetsockoptString(int(fd), syscall.IPPROTO_TCP, syscall.TCP_CONGESTION, c.req.soCongestion)
 	})

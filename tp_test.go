@@ -196,12 +196,13 @@ func TestPrintJsonPretty(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	c := &client{stats: stats{}, req: &request{jsonPretty: true}}
+	c := &client{stats: stats{}, req: &request{jsonPretty: true, filter: "rtt"}}
 	c.printer(0)
 
-	buf := make([]byte, 730)
+	buf := make([]byte, 13)
 	n, _ := io.ReadFull(r, buf)
-	assert.Equal(t, 730, n)
+	assert.Equal(t, 13, n)
+	assert.Equal(t, "{\n \"Rtt\": 0\n}", string(buf))
 
 	os.Stdout = stdout
 }
@@ -211,12 +212,13 @@ func TestPrintJson(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	c := &client{stats: stats{}, req: &request{json: true}}
+	c := &client{stats: stats{}, req: &request{json: true, filter: "rtt"}}
 	c.printer(0)
 
-	buf := make([]byte, 330)
+	buf := make([]byte, 9)
 	n, _ := io.ReadFull(r, buf)
-	assert.Equal(t, 330, n)
+	assert.Equal(t, 9, n)
+	assert.Equal(t, `{"Rtt":0}`, string(buf))
 
 	os.Stdout = stdout
 }

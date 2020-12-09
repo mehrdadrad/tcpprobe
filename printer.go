@@ -16,9 +16,9 @@ func (c *client) printer(counter int) {
 
 	switch {
 	case c.req.json:
-		c.printJSON(counter)
+		c.printJSON(counter, false)
 	case c.req.jsonPretty:
-		c.printJSONPretty(counter)
+		c.printJSON(counter, true)
 	default:
 		c.printText(counter)
 	}
@@ -38,9 +38,14 @@ func (c *client) printText(counter int) {
 	fmt.Println("")
 }
 
-func (c *client) printJSONPretty(counter int) {
+func (c *client) printJSON(counter int, pretty bool) {
+	var (
+		b   []byte
+		err error
+	)
+
 	ip, _, _ := net.SplitHostPort(c.addr)
-	b, err := json.MarshalIndent(struct {
+	d := struct {
 		Target    string
 		IP        string
 		Timestamp int64
@@ -52,7 +57,15 @@ func (c *client) printJSONPretty(counter int) {
 		c.timestamp,
 		counter,
 		c.stats,
-	}, "", "  ")
+	}
+
+	if c.req.filter != "" {
+		b, err = jsonMarshalFilter(d, c.req.filter, pretty)
+	} else if pretty {
+		b, err = json.MarshalIndent(d, "", "  ")
+	} else {
+		b, err = json.Marshal(d)
+	}
 
 	if err != nil {
 		log.Println(err)
@@ -62,26 +75,27 @@ func (c *client) printJSONPretty(counter int) {
 	fmt.Println(string(b))
 }
 
-func (c *client) printJSON(counter int) {
-	ip, _, _ := net.SplitHostPort(c.addr)
-	b, err := json.Marshal(struct {
-		Target    string
-		IP        string
-		Timestamp int64
-		Seq       int
-		stats
-	}{
-		c.target,
-		ip,
-		c.timestamp,
-		counter,
-		c.stats,
-	})
+func jsonMarshalFilter(s interface{}, filter string, pretty bool) ([]byte, error) {
+	var m map[string]interface{}
 
+	b, err := json.Marshal(s)
 	if err != nil {
-		log.Println(err)
-		return
+		return nil, err
 	}
 
-	fmt.Println(string(b))
+	json.Unmarshal(b, &m)
+
+	lFilter := strings.ToLower(filter)
+
+	for k := range m {
+		if !strings.Contains(lFilter, strings.ToLower(k)) {
+			delete(m, k)
+		}
+	}
+
+	if pretty {
+		return json.MarshalIndent(m, "", " ")
+	}
+
+	return json.Marshal(m)
 }

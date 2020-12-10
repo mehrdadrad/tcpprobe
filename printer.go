@@ -31,8 +31,12 @@ func (c *client) printText(counter int) {
 	ip, _, _ := net.SplitHostPort(c.addr)
 	fmt.Printf("Target:%s IP:%s Timestamp:%d Seq:%d\n", c.target, ip, c.timestamp, counter)
 	for i := 0; i < v.NumField(); i++ {
-		if strings.Contains(filter, strings.ToLower(v.Type().Field(i).Name)) || filter == "" {
-			fmt.Printf("%s:%d ", v.Type().Field(i).Name, v.Field(i).Interface())
+		f := v.Type().Field(i)
+		if f.Tag.Get("unexported") == "true" {
+			continue
+		}
+		if strings.Contains(filter, strings.ToLower(f.Name)) || filter == "" {
+			fmt.Printf("%s:%d ", f.Name, v.Field(i).Interface())
 		}
 	}
 	fmt.Println("")

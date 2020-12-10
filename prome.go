@@ -11,6 +11,10 @@ func (c *client) prometheus() {
 	for i := 0; i < v.NumField(); i++ {
 		i := i
 
+		if v.Type().Field(i).Tag.Get("unexported") == "true" {
+			continue
+		}
+
 		switch v.Field(i).Kind() {
 		case reflect.Uint, reflect.Uint8, reflect.Uint32, reflect.Uint64:
 			prometheus.Register(prometheus.NewGaugeFunc(prometheus.GaugeOpts{

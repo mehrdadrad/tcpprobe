@@ -13,7 +13,6 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"reflect"
 	"strings"
 	"syscall"
 	"time"
@@ -21,36 +20,59 @@ import (
 )
 
 type stats struct {
-	State        uint8  `key:"State" name:"tcpinfo_state" help:"TCP state"`
-	CaState      uint8  `key:"Ca_state" name:"tcpinfo_ca_state" help:"state of congestion avoidance"`
-	Retransmits  uint8  `key:"Retransmits" name:"tcpinfo_retransmits" help:"number of retranmissions on timeout invoked"`
-	Probes       uint8  `key:"Probes" name:"tcpinfo_probes" help:"consecutive zero window probes that have gone unanswered"`
-	Backoff      uint8  `key:"Backoff" name:"tcpinfo_backoff" help:"used for exponential backoff re-transmission"`
-	Options      uint8  `key:"Options" name:"tcpinfo_options" help:"number of requesting options"`
-	Rto          uint32 `key:"Rto" name:"tcpinfo_rto" help:"tcp re-transmission timeout value, the unit is microsecond"`
-	Ato          uint32 `key:"Ato" name:"tcpinfo_ato" help:"ack timeout, unit is microsecond"`
-	SndMss       uint32 `key:"Snd_mss" name:"tcpinfo_snd_mss" help:"current maximum segment size"`
-	RcvMss       uint32 `key:"Rcv_mss" name:"tcpinfo_rcv_mss" help:"maximum observed segment size from the remote host"`
-	Unacked      uint32 `key:"Unacked" name:"tcpinfo_unacked" help:"number of unack'd segments"`
-	Sacked       uint32 `key:"Sacked" name:"tcpinfo_sacked" help:"scoreboard segment marked SACKED by sack blocks accounting for the pipe algorithm"`
-	Lost         uint32 `key:"Lost" name:"tcpinfo_lost" help:"scoreboard segments marked lost by loss detection heuristics accounting for the pipe algorithm"`
-	Retrans      uint32 `key:"Retrans" name:"tcpinfo_retrans" help:"how many times the retran occurs"`
-	Fackets      uint32 `key:"Fackets" name:"tcpinfo_fackets" help:""`
-	LastDataSent uint32 `key:"Last_data_sent" name:"tcpinfo_last_data_sent" help:"time since last data segment was sent"`
-	LastAckSent  uint32 `key:"Last_ack_sent" name:"tcpinfo_last_ack_sent" help:"how long time since the last ack sent"`
-	LastDataRecv uint32 `key:"Last_data_recv" name:"tcpinfo_last_data_recv" help:"time since last data segment was received"`
-	LastAckRecv  uint32 `key:"Last_ack_recv" name:"tcpinfo_last_ack_recv" help:"how long time since the last ack received"`
-	Pmtu         uint32 `key:"Pmtu" name:"tcpinfo_path_mtu" help:"path MTU"`
-	RcvSsthresh  uint32 `key:"Rcv_ssthresh" name:"tcpinfo_rev_ss_thresh" help:"tcp congestion window slow start threshold"`
-	Rtt          uint32 `key:"Rtt" name:"tcpinfo_rtt" help:"smoothed round trip time"`
-	Rttvar       uint32 `key:"Rttvar" name:"tcpinfo_rtt_var" help:"RTT variance"`
-	SndSsthresh  uint32 `key:"Snd_ssthresh" name:"tcpinfo_snd_ss_thresh" help:"slow start threshold"`
-	SndCwnd      uint32 `key:"Snd_cwnd" name:"tcpinfo_snd_cwnd" help:"congestion window size"`
-	Advmss       uint32 `key:"Advmss" name:"tcpinfo_adv_mss" help:"advertised maximum segment size"`
-	Reordering   uint32 `key:"Reordering" name:"tcpinfo_reordering" help:"number of reordered segments allowed"`
-	RcvRtt       uint32 `key:"Rcv_rtt" name:"tcpinfo_rcv_rtt" help:"receiver side RTT estimate"`
-	RcvSpace     uint32 `key:"Rcv_space" name:"tcpinfo_rcv_space" help:"space reserved for the receive queue"`
-	TotalRetrans uint32 `key:"Total_retrans" name:"tcpinfo_total_retrans" help:"total number of segments containing retransmitted data"`
+	State         uint8   `name:"tcpinfo_state" help:"TCP state"`
+	CaState       uint8   `name:"tcpinfo_ca_state" help:"state of congestion avoidance"`
+	Retransmits   uint8   `name:"tcpinfo_retransmits" help:"number of retranmissions on timeout invoked"`
+	Probes        uint8   `name:"tcpinfo_probes" help:"consecutive zero window probes that have gone unanswered"`
+	Backoff       uint8   `name:"tcpinfo_backoff" help:"used for exponential backoff re-transmission"`
+	Options       uint8   `name:"tcpinfo_options" help:"number of requesting options"`
+	pad           [2]byte `unexported:"true"`
+	Rto           uint32  `name:"tcpinfo_rto" help:"tcp re-transmission timeout value, the unit is microsecond"`
+	Ato           uint32  `name:"tcpinfo_ato" help:"ack timeout, unit is microsecond"`
+	SndMss        uint32  `name:"tcpinfo_snd_mss" help:"current maximum segment size"`
+	RcvMss        uint32  `name:"tcpinfo_rcv_mss" help:"maximum observed segment size from the remote host"`
+	Unacked       uint32  `name:"tcpinfo_unacked" help:"number of unack'd segments"`
+	Sacked        uint32  `name:"tcpinfo_sacked" help:"scoreboard segment marked SACKED by sack blocks accounting for the pipe algorithm"`
+	Lost          uint32  `name:"tcpinfo_lost" help:"scoreboard segments marked lost by loss detection heuristics accounting for the pipe algorithm"`
+	Retrans       uint32  `name:"tcpinfo_retrans" help:"how many times the retran occurs"`
+	Fackets       uint32  `name:"tcpinfo_fackets" help:""`
+	LastDataSent  uint32  `name:"tcpinfo_last_data_sent" help:"time since last data segment was sent"`
+	LastAckSent   uint32  `name:"tcpinfo_last_ack_sent" help:"how long time since the last ack sent"`
+	LastDataRecv  uint32  `name:"tcpinfo_last_data_recv" help:"time since last data segment was received"`
+	LastAckRecv   uint32  `name:"tcpinfo_last_ack_recv" help:"how long time since the last ack received"`
+	Pmtu          uint32  `name:"tcpinfo_path_mtu" help:"path MTU"`
+	RcvSsthresh   uint32  `name:"tcpinfo_rev_ss_thresh" help:"tcp congestion window slow start threshold"`
+	Rtt           uint32  `name:"tcpinfo_rtt" help:"smoothed round trip time"`
+	Rttvar        uint32  `name:"tcpinfo_rtt_var" help:"RTT variance"`
+	SndSsthresh   uint32  `name:"tcpinfo_snd_ss_thresh" help:"slow start threshold"`
+	SndCwnd       uint32  `name:"tcpinfo_snd_cwnd" help:"congestion window size"`
+	Advmss        uint32  `name:"tcpinfo_adv_mss" help:"advertised maximum segment size"`
+	Reordering    uint32  `name:"tcpinfo_reordering" help:"number of reordered segments allowed"`
+	RcvRtt        uint32  `name:"tcpinfo_rcv_rtt" help:"receiver side RTT estimate"`
+	RcvSpace      uint32  `name:"tcpinfo_rcv_space" help:"space reserved for the receive queue"`
+	TotalRetrans  uint32  `name:"tcpinfo_total_retrans" help:"total number of segments containing retransmitted data"`
+	PacingRate    uint64  `name:"tcpinfo_pacing_rate" help:"the pacing rate"`
+	maxPacingRate uint64  `name:"tcpinfo_max_pacing_rate" help:"" unexported:"true"`
+	BytesAcked    uint64  `name:"tcpinfo_bytes_acked" help:"bytes acked"`
+	BytesReceived uint64  `name:"tcpinfo_bytes_received" help:"bytes received"`
+	SegsOut       uint32  `name:"tcpinfo_segs_out" help:"segments sent out"`
+	SegsIn        uint32  `name:"tcpinfo_segs_in" help:"segments received"`
+	NotsentBytes  uint32  `name:"tcpinfo_notsent_bytes" help:""`
+	MinRtt        uint32  `name:"tcpinfo_min_rtt" help:""`
+	DataSegsIn    uint32  `name:"tcpinfo_data_segs_in" help:"RFC4898 tcpEStatsDataSegsIn"`
+	DataSegsOut   uint32  `name:"tcpinfo_data_segs_out" help:"RFC4898 tcpEStatsDataSegsOut"`
+	DeliveryRate  uint64  `name:"tcpinfo_delivery_rate" help:""`
+	BusyTime      uint64  `name:"tcpinfo_busy_time" help:"time (usec) busy sending data"`
+	RwndLimited   uint64  `name:"tcpinfo_rwnd_limited" help:"time (usec) limited by receive window"`
+	SndbufLimited uint64  `name:"tcpinfo_sndbuf_limited" help:"time (usec) limited by send buffer"`
+	Delivered     uint32  `name:"tcpinfo_delivered" help:""`
+	DeliveredCe   uint32  `name:"tcpinfo_delivered_ce" help:""`
+	BytesSent     uint64  `name:"tcpinfo_bytes_sent" help:""`
+	BytesRetrans  uint64  `name:"tcpinfo_bytes_retrans" help:"RFC4898 tcpEStatsPerfOctetsRetrans"`
+	DsackDups     uint32  `name:"tcpinfo_dsack_dups" help:"RFC4898 tcpEStatsStackDSACKDups"`
+	ReordSeen     uint32  `name:"tcpinfo_reord_seen" help:"reordering events seen"`
+	RcvOoopack    uint32  `name:"tcpinfo_rcv_ooopack" help:"out-of-order packets received"`
+	SndWnd        uint32  `name:"tcpinfo_snd_wnd" help:""`
 
 	TCPCongesAlg string `help:"TCP network congestion-avoidance algorithm"`
 
@@ -349,11 +371,10 @@ func (c *client) getTCPInfo() error {
 	defer file.Close()
 
 	fd := file.Fd()
-	tcpInfo := syscall.TCPInfo{}
-	size := uint32(syscall.SizeofTCPInfo)
+	size := uint32(232)
 
 	_, _, e := syscall.Syscall6(syscall.SYS_GETSOCKOPT, fd, syscall.SOL_TCP, syscall.TCP_INFO,
-		uintptr(unsafe.Pointer(&tcpInfo)), uintptr(unsafe.Pointer(&size)), 0)
+		uintptr(unsafe.Pointer(&c.stats)), uintptr(unsafe.Pointer(&size)), 0)
 	if e != 0 {
 		return fmt.Errorf("syscall err number=%d", e)
 	}
@@ -368,19 +389,6 @@ func (c *client) getTCPInfo() error {
 	}
 
 	c.stats.TCPCongesAlg = string(bytes.Trim(ca, "\x00"))
-
-	src := reflect.ValueOf(&tcpInfo).Elem()
-	dst := reflect.ValueOf(&c.stats).Elem()
-
-	for i := 0; i < dst.NumField(); i++ {
-		if dst.Type().Field(i).Tag.Get("key") == "" {
-			continue
-		}
-
-		from := src.FieldByName(dst.Type().Field(i).Tag.Get("key")).Addr().Interface()
-		to := dst.FieldByName(dst.Type().Field(i).Name).Addr().Interface()
-		reflect.ValueOf(to).Elem().Set(reflect.ValueOf(from).Elem())
-	}
 
 	return nil
 }

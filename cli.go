@@ -113,7 +113,11 @@ func getCli(args []string) (*request, []string, error) {
 				fmt.Println("metrics:")
 				v := reflect.ValueOf(&stats{}).Elem()
 				for i := 0; i < v.NumField(); i++ {
-					fmt.Printf("%s %s\n", v.Type().Field(i).Name, v.Type().Field(i).Tag.Get("help"))
+					f := v.Type().Field(i)
+					if f.Tag.Get("unexported") == "true" {
+						continue
+					}
+					fmt.Printf("%s %s\n", f.Name, f.Tag.Get("help"))
 				}
 
 				return nil

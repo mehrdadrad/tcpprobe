@@ -138,11 +138,15 @@ func TestPrometheus(t *testing.T) {
 
 	v := reflect.ValueOf(&c.stats).Elem()
 	for i := 0; i < v.NumField(); i++ {
-		i := i
+		f := v.Type().Field(i)
+
+		if f.Tag.Get("unexported") == "true" {
+			continue
+		}
 
 		req := prometheus.NewCounter(prometheus.CounterOpts{
-			Name:        "tp_" + v.Type().Field(i).Tag.Get("name"),
-			Help:        v.Type().Field(i).Tag.Get("help"),
+			Name:        "tp_" + f.Tag.Get("name"),
+			Help:        f.Tag.Get("help"),
 			ConstLabels: prometheus.Labels{"target": c.target},
 		})
 
@@ -245,7 +249,7 @@ func TestMain(t *testing.T) {
 	main()
 
 	buf := new(bytes.Buffer)
-	io.CopyN(buf, r, 500)
+	io.CopyN(buf, r, 800)
 
 	assert.Contains(t, buf.String(), "Target:https://127.0.0.1")
 	assert.Contains(t, buf.String(), "HTTPStatusCode:200")

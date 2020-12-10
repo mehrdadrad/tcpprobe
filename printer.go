@@ -36,7 +36,7 @@ func (c *client) printText(counter int) {
 			continue
 		}
 		if strings.Contains(filter, strings.ToLower(f.Name)) || filter == "" {
-			fmt.Printf("%s:%d ", f.Name, v.Field(i).Interface())
+			fmt.Printf("%s:%v ", f.Name, v.Field(i).Interface())
 		}
 	}
 	fmt.Println("")

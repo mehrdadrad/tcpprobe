@@ -85,8 +85,8 @@ type stats struct {
 	TCPConnect   int64 `name:"tcp_connect" help:"TCP connect, the unit is microsecond"`
 	TLSHandshake int64 `name:"tls_handshake" help:"TLS handshake, the unit is microsecond"`
 
-	TCPConnectError int64 `name:"tcp_connect_error" help:"total TCP connect error"`
-	DNSResolveError int64 `name:"dns_resolve_error" help:"total DNS resolve error"`
+	TCPConnectError int64 `name:"tcp_connect_error" help:"total TCP connect error" kind:"counter"`
+	DNSResolveError int64 `name:"dns_resolve_error" help:"total DNS resolve error" kind:"counter"`
 }
 
 type client struct {
@@ -114,7 +114,7 @@ func newClient(req *request, target string) *client {
 	}
 }
 
-func (c *client) connect() error {
+func (c *client) connect(ctx context.Context) error {
 	var err error
 
 	c.timestamp = time.Now().Unix()
@@ -130,7 +130,7 @@ func (c *client) connect() error {
 		LocalAddr: getSrcAddr(c.req.srcAddr),
 		Control:   c.control,
 	}
-	ctx, cancel := context.WithTimeout(context.Background(), c.req.timeout)
+	ctx, cancel := context.WithTimeout(ctx, c.req.timeout)
 	defer cancel()
 
 	t := time.Now()
@@ -170,12 +170,16 @@ func (c *client) control(network string, address string, conn syscall.RawConn) e
 		setSocketOptInt(int(fd), syscall.IPPROTO_TCP, syscall.TCP_NODELAY, boolToInt(!c.req.soTCPNoDelay), true)
 		setSocketOptInt(int(fd), syscall.IPPROTO_TCP, syscall.TCP_QUICKACK, boolToInt(!c.req.soTCPQuickACK), true)
 		setSocketOptInt(int(fd), syscall.IPPROTO_TCP, syscall.TCP_MAXSEG, c.req.soMaxSegSize, false)
-		syscall.SetsockoptString(int(fd), syscall.IPPROTO_TCP, syscall.TCP_CONGESTION, c.req.soCongestion)
+
+		err := syscall.SetsockoptString(int(fd), syscall.IPPROTO_TCP, syscall.TCP_CONGESTION, c.req.soCongestion)
+		if c.req.soCongestion != "" && err != nil {
+			log.Fatal(os.NewSyscallError("congestion-avoidance algorithm error", err))
+		}
 	})
 }
 
 func setSocketOptInt(fd int, level int, opt int, value int, zeroExc bool) {
-	if value == 0 && !zeroExc {
+	if (value == 0 && !zeroExc) || (value == 1 && zeroExc) {
 		return
 	}
 
@@ -316,19 +320,25 @@ func (c *client) serverName() string {
 	return host
 }
 
-func (c *client) probe() {
+func (c *client) probe(ctx context.Context) {
 	counter := -1
-
+	wait := c.getInterval(ctx)
 	for counter < c.req.count-1 || c.req.count == 0 {
 		counter++
 
 		if counter != 0 {
-			time.Sleep(c.req.wait)
+			select {
+			case <-time.After(wait):
+			case <-ctx.Done():
+				return
+			}
 		}
 
-		err := c.connect()
+		err := c.connect(ctx)
 		if err != nil {
-			log.Println(err)
+			if ctx.Err() == nil {
+				log.Println(err)
+			}
 			continue
 		}
 
@@ -391,6 +401,19 @@ func (c *client) getTCPInfo() error {
 	c.stats.TCPCongesAlg = string(bytes.Trim(ca, "\x00"))
 
 	return nil
+}
+
+func (c *client) getInterval(ctx context.Context) time.Duration {
+	if v := ctx.Value(intervalKey); v != nil {
+		d, err := time.ParseDuration(v.(string))
+		if err != nil || d == 0 {
+			return c.req.interval
+		}
+
+		return d
+	}
+
+	return c.req.interval
 }
 
 func boolToInt(b bool) int {

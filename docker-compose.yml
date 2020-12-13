@@ -6,15 +6,7 @@ services:
     ports:
       - "8081:8081"
     entrypoint:
-      [
-        "tcpprobe",
-        "-c",
-        "0",
-        "-w",
-        "5s",
-        "https://www.google.com",
-        "https://github.com",
-      ]
+      ["tcpprobe", "-i", "20s", "https://www.google.com", "https://github.com"]
 
   prometheus:
     image: prom/prometheus:latest

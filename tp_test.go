@@ -191,7 +191,7 @@ func TestPrintText(t *testing.T) {
 	c.printer(0)
 
 	buf := new(bytes.Buffer)
-	io.CopyN(buf, r, 36)
+	io.CopyN(buf, r, 46)
 	assert.Contains(t, buf.String(), "Rtt:5")
 
 	os.Stdout = stdout
@@ -253,7 +253,7 @@ func TestMain(t *testing.T) {
 	buf := new(bytes.Buffer)
 	io.CopyN(buf, r, 800)
 
-	assert.Contains(t, buf.String(), "Target:https://127.0.0.1")
+	assert.Contains(t, buf.String(), "target: https://127.0.0.1")
 	assert.Contains(t, buf.String(), "HTTPStatusCode:200")
 
 	os.Stdout = stdout

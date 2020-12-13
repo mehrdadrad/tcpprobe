@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package main;
+
+option go_package = "github.com/mehrdadrad/tcpprobe;proto";
+
+service TCPProbe {
+    rpc Add(Target) returns (Response){}
+    rpc Delete(Target) returns (Response){}
+}
+
+message Target {
+    string addr = 1;
+    string interval = 2;
+    map<string, string> labels = 3;
+}
+
+message Response {
+    string message = 1;
+}

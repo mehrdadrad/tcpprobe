@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net"
@@ -17,6 +18,7 @@ import (
 )
 
 func TestClient(t *testing.T) {
+	ctx := context.Background()
 	// HTTPS
 	ts := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprintln(w, "Hello, TCPProbe")
@@ -32,7 +34,7 @@ func TestClient(t *testing.T) {
 	c := newClient(&r, ts.URL)
 	assert.Equal(t, 2, c.req.count)
 
-	err := c.connect()
+	err := c.connect(ctx)
 	assert.NoError(t, err)
 	err = c.httpGet()
 	assert.NoError(t, err)
@@ -41,7 +43,7 @@ func TestClient(t *testing.T) {
 	c.close()
 
 	c = newClient(&r, ts.URL)
-	c.probe()
+	c.probe(ctx)
 
 	assert.Equal(t, uint8(1), c.stats.State)
 	assert.Equal(t, 200, c.HTTPStatusCode)
@@ -62,7 +64,7 @@ func TestClient(t *testing.T) {
 	}))
 
 	c = newClient(&r, ts.URL)
-	err = c.connect()
+	err = c.connect(ctx)
 	assert.NoError(t, err)
 	err = c.httpGet()
 	assert.NoError(t, err)
@@ -75,27 +77,27 @@ func TestClient(t *testing.T) {
 
 	// unreachable host
 	c = newClient(&r, "127.0.0.0")
-	err = c.connect()
+	err = c.connect(ctx)
 	assert.Error(t, err)
 
 	// name not known
 	c = newClient(&r, "tcpprobeunknowndomain.com")
-	err = c.connect()
+	err = c.connect(ctx)
 	assert.Error(t, err)
 
 	// unreachable ipv6 addr
 	c = newClient(&r, "[::1]:5050")
-	err = c.connect()
+	err = c.connect(ctx)
 	assert.Error(t, err)
 
 	// wrong target
 	c = newClient(&r, ":::")
-	err = c.connect()
+	err = c.connect(ctx)
 	assert.Error(t, err)
 
 	// external, without explicit port
 	c = newClient(&r, "https://www.google.com")
-	err = c.connect()
+	err = c.connect(ctx)
 	assert.NoError(t, err)
 	c.close()
 }
@@ -134,7 +136,7 @@ func TestCli(t *testing.T) {
 
 func TestPrometheus(t *testing.T) {
 	c := &client{}
-	c.prometheus()
+	c.prometheus(context.Background())
 
 	v := reflect.ValueOf(&c.stats).Elem()
 	for i := 0; i < v.NumField(); i++ {

@@ -17,15 +17,18 @@ type request struct {
 	ipv4         bool
 	ipv6         bool
 	http2        bool
+	k8s          bool
 	json         bool
 	jsonPretty   bool
 	quiet        bool
 	insecure     bool
 	promDisabled bool
+	namespace    string
 	promAddr     string
 	serverName   string
 	srcAddr      string
 	filter       string
+	config       string
 
 	soIPTOS       int
 	soIPTTL       int
@@ -39,7 +42,7 @@ type request struct {
 
 	timeout     time.Duration
 	timeoutHTTP time.Duration
-	wait        time.Duration
+	interval    time.Duration
 }
 
 func getCli(args []string) (*request, []string, error) {
@@ -54,14 +57,14 @@ func getCli(args []string) (*request, []string, error) {
 		&cli.IntFlag{Name: "count", Aliases: []string{"c"}, Value: 0, Usage: "stop after sending count requests [0 is unlimited]"},
 		&cli.BoolFlag{Name: "http2", Usage: "force to use HTTP version 2"},
 		&cli.BoolFlag{Name: "prom-disabled", Usage: "disable prometheus"},
-		&cli.BoolFlag{Name: "insecure", Aliases: []string{"i"}, Usage: "don't validate the server's certificate"},
+		&cli.BoolFlag{Name: "insecure", Usage: "don't validate the server's certificate"},
 		&cli.StringFlag{Name: "server-name", Aliases: []string{"n"}, Usage: "server name is used to verify the hostname (TLS)"},
 		&cli.StringFlag{Name: "source-addr", Aliases: []string{"S"}, Usage: "source address in outgoing request"},
 		&cli.StringFlag{Name: "prom-addr", Aliases: []string{"p"}, Value: ":8081", Usage: "specify prometheus exporter IP and port"},
 		&cli.StringFlag{Name: "filter", Aliases: []string{"f"}, Usage: "given metric(s) with semicolon delimited"},
 		&cli.DurationFlag{Name: "timeout", Aliases: []string{"t"}, Value: 5 * time.Second, Usage: "specify a timeout for dialing to targets"},
 		&cli.DurationFlag{Name: "http-timeout", Aliases: []string{}, Value: 30 * time.Second, Usage: "specify a timeout for HTTP"},
-		&cli.DurationFlag{Name: "wait", Aliases: []string{"w"}, Value: time.Second, Usage: "time to wait after each request"},
+		&cli.DurationFlag{Name: "interval", Aliases: []string{"i"}, Value: time.Second, Usage: "time to wait after each request"},
 		&cli.IntFlag{Name: "tos", Aliases: []string{"z"}, DefaultText: "depends on the OS", Usage: "set the IP type of service"},
 		&cli.IntFlag{Name: "ttl", Aliases: []string{"m"}, DefaultText: "depends on the OS", Usage: "set the IP time to live"},
 		&cli.IntFlag{Name: "socket-priority", Aliases: []string{"r"}, DefaultText: "depends on the OS", Usage: "set queuing discipline"},
@@ -71,10 +74,13 @@ func getCli(args []string) (*request, []string, error) {
 		&cli.IntFlag{Name: "rcvd-buffer", Aliases: []string{}, DefaultText: "depends on the OS", Usage: "maximum socket receive buffer in bytes"},
 		&cli.BoolFlag{Name: "tcp-nodelay-disabled", Aliases: []string{"o"}, Usage: "disable Nagle's algorithm"},
 		&cli.BoolFlag{Name: "tcp-quickack-disabled", Aliases: []string{"k"}, Usage: "disable quickack mode"},
+		&cli.BoolFlag{Name: "k8s", Usage: "enable k8s"},
+		&cli.StringFlag{Name: "namespace", Aliases: []string{"default"}, Usage: "Tkubernetes namespace"},
 		&cli.BoolFlag{Name: "quiet", Aliases: []string{"q"}, Usage: "turn off tcpprobe output"},
 		&cli.BoolFlag{Name: "json", Usage: "print in json format"},
 		&cli.BoolFlag{Name: "json-pretty", Usage: "pretty print in json format"},
 		&cli.BoolFlag{Name: "metrics", Usage: "show metric's descriptions"},
+		&cli.StringFlag{Name: "config", Usage: "config file"},
 	}
 
 	app := &cli.App{
@@ -84,15 +90,18 @@ func getCli(args []string) (*request, []string, error) {
 				ipv4:         c.Bool("ipv4"),
 				ipv6:         c.Bool("ipv6"),
 				http2:        c.Bool("http2"),
+				k8s:          c.Bool("k8s"),
 				json:         c.Bool("json"),
 				jsonPretty:   c.Bool("json-pretty"),
 				quiet:        c.Bool("quiet"),
 				insecure:     c.Bool("insecure"),
 				promDisabled: c.Bool("prom-disabled"),
+				namespace:    c.String("namespace"),
 				promAddr:     c.String("prom-addr"),
 				serverName:   c.String("server-name"),
 				srcAddr:      c.String("source-addr"),
 				filter:       c.String("filter"),
+				config:       c.String("config"),
 				count:        c.Int("count"),
 
 				soIPTOS:      c.Int("tos"),
@@ -104,7 +113,7 @@ func getCli(args []string) (*request, []string, error) {
 				soCongestion: c.String("congestion-alg"),
 				soTCPNoDelay: c.Bool("tcp-nodelay-disabled"),
 
-				wait:        c.Duration("wait"),
+				interval:    c.Duration("interval"),
 				timeout:     c.Duration("timeout"),
 				timeoutHTTP: c.Duration("http-timeout"),
 			}
@@ -124,7 +133,7 @@ func getCli(args []string) (*request, []string, error) {
 			}
 
 			targets = c.Args().Slice()
-			if len(targets) < 1 {
+			if len(targets) < 1 && len(r.config) < 1 && !r.k8s {
 				cli.ShowAppHelp(c)
 				return errors.New("configuration not specified")
 			}

@@ -43,7 +43,7 @@ func (k *k8s) start(ctx context.Context, tp *tp, req *request) {
 		for {
 			pods, err := clientset.CoreV1().Pods(req.namespace).List(ctx, metav1.ListOptions{})
 			if err != nil {
-				if ctx.Err != nil {
+				if ctx.Err() != nil {
 					return
 				}
 				log.Println(err)

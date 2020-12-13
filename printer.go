@@ -7,6 +7,7 @@ import (
 	"net"
 	"reflect"
 	"strings"
+	"time"
 )
 
 func (c *client) printer(counter int) {
@@ -29,7 +30,8 @@ func (c *client) printText(counter int) {
 	filter := strings.ToLower(c.req.filter)
 
 	ip, _, _ := net.SplitHostPort(c.addr)
-	fmt.Printf("Target:%s IP:%s Timestamp:%d Seq:%d\n", c.target, ip, c.timestamp, counter)
+	datetime := time.Unix(c.timestamp, 0).Format(time.RFC3339)
+	fmt.Printf("%s target: %s (%s) seq: %d\n", datetime, c.target, ip, counter)
 	for i := 0; i < v.NumField(); i++ {
 		f := v.Type().Field(i)
 		if f.Tag.Get("unexported") == "true" {

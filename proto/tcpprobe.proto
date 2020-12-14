@@ -16,5 +16,6 @@ message Target {
 }
 
 message Response {
-    string message = 1;
+    int32 code =1;
+    string message = 2;
 }

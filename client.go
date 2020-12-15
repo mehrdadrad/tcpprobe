@@ -19,6 +19,8 @@ import (
 	"unsafe"
 )
 
+// stats represents the metrics including socket
+// statistics, TCP connect, DNS, TLS, HTTP and errors.
 type stats struct {
 	State         uint8   `name:"tcpinfo_state" help:"TCP state"`
 	CaState       uint8   `name:"tcpinfo_ca_state" help:"state of congestion avoidance"`
@@ -89,6 +91,7 @@ type stats struct {
 	DNSResolveError int64 `name:"dns_resolve_error" help:"total DNS resolve error" kind:"counter"`
 }
 
+// client represents a proble client to specific target
 type client struct {
 	target    string
 	addr      string

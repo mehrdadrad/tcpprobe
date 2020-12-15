@@ -1,0 +1,7 @@
+apiVersion: v2
+name: TCPProbe
+description: A TCP tool for network performance and path monitoring, including socket statistics.
+
+type: application
+version: 0.1.0
+appVersion: 0.1.0 

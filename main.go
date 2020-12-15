@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -28,6 +29,8 @@ type tp struct {
 var (
 	intervalKey intervalContextKey
 	labelsKey   labelsContextKey
+
+	errExist = errors.New("the target already exist")
 )
 
 func main() {
@@ -40,10 +43,21 @@ func main() {
 		return
 	}
 
+	if req.cmd != nil {
+		grpcClient(req)
+		return
+	}
+
 	tp := &tp{targets: make(map[string]prop)}
 
+	// command line targets
 	wg.Add(len(targets))
 	for _, target := range targets {
+		if ok := tp.isExist(target); ok {
+			log.Println(errExist, target)
+			continue
+		}
+
 		go func(target string) {
 			defer wg.Done()
 			tp.start(ctx, target, req)
@@ -51,6 +65,7 @@ func main() {
 		}(target)
 	}
 
+	// config
 	cfg, err := getConfig(req.config)
 	if err != nil {
 		log.Fatal(err)
@@ -58,6 +73,11 @@ func main() {
 
 	wg.Add(len(cfg.Targets))
 	for _, t := range cfg.Targets {
+		if ok := tp.isExist(t.Addr); ok {
+			log.Println(errExist, t.Addr)
+			continue
+		}
+
 		go func(ctx context.Context, target target) {
 			defer wg.Done()
 			b, _ := json.Marshal(target.Labels)
@@ -68,10 +88,17 @@ func main() {
 		}(ctx, t)
 	}
 
+	// kubernetes
 	if req.k8s {
 		kube().start(ctx, tp, req)
 	}
 
+	// grpc server
+	if req.grpc {
+		grpcServer(tp, req)
+	}
+
+	// prometheus
 	if !req.promDisabled {
 		go func() {
 			http.Handle("/metrics", promhttp.Handler())
@@ -85,18 +112,13 @@ func main() {
 func wait(ctx context.Context, wg *sync.WaitGroup, req *request) {
 	wg.Wait()
 
-	if req.k8s {
+	if req.k8s || req.grpc {
 		<-ctx.Done()
 	}
 }
 
 func (t *tp) start(ctx context.Context, target string, req *request) {
 	t.Lock()
-
-	if _, ok := t.targets[target]; ok {
-		t.Unlock()
-		return
-	}
 
 	ctx, cancel := context.WithCancel(ctx)
 	c := newClient(req, target)
@@ -128,4 +150,13 @@ func (t *tp) stop(target string) {
 	}
 
 	t.targets[target].cancel()
+}
+
+func (t *tp) isExist(target string) bool {
+	t.Lock()
+	defer t.Unlock()
+
+	_, ok := t.targets[target]
+
+	return ok
 }

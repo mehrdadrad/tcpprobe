@@ -3,18 +3,24 @@ package main
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"reflect"
+	"sync"
 	"testing"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
+	v1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/client-go/kubernetes/fake"
 )
 
 func TestClient(t *testing.T) {
@@ -259,6 +265,72 @@ func TestMain(t *testing.T) {
 	os.Stdout = stdout
 }
 
+func TestGetLabels(t *testing.T) {
+	labels := map[string]string{"key": "value"}
+	b, _ := json.Marshal(labels)
+	ctx := context.WithValue(context.Background(), labelsKey, b)
+	l := getLabels(ctx, "127.0.0.1")
+	assert.Contains(t, l, "key")
+	assert.Contains(t, l, "target")
+
+	ctx = context.WithValue(context.Background(), labelsKey, []byte(""))
+	getLabels(ctx, "127.0.0.1")
+	assert.Contains(t, l, "target")
+}
+
+func TestK8SStart(t *testing.T) {
+	ctx := context.Background()
+	tp := &tp{targets: make(map[string]prop)}
+	req := &request{namespace: "default"}
+
+	samplePod := &v1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "fake",
+			Namespace: "default",
+			Annotations: map[string]string{
+				"tcpprobe/targets":  "https://www.google.com",
+				"tcpprobe/interval": "6s",
+				"tcpprobe/labels":   "{\"mykey\":\"myvalue\"}",
+			},
+		},
+		Status: v1.PodStatus{Phase: "Running"},
+	}
+
+	clientset := fake.NewSimpleClientset(samplePod)
+	k := k8s{clientset: clientset, pods: sync.Map{}}
+	k.start(ctx, tp, req)
+	time.Sleep(time.Second)
+	assert.Contains(t, tp.targets, "https://www.google.com")
+}
+
+func TestGetConfig(t *testing.T) {
+	cfgFile, err := ioutil.TempFile(t.TempDir(), "config.yml")
+	assert.Equal(t, nil, err)
+
+	content := `
+  targets:
+    - addr: https://www.google.com
+      interval: 10s
+      labels:
+        pop: bur`
+
+	cfgFile.Write([]byte(content))
+	cfg, err := getConfig(cfgFile.Name())
+	assert.Equal(t, nil, err)
+	assert.Len(t, cfg.Targets, 1)
+	assert.Equal(t, "https://www.google.com", cfg.Targets[0].Addr)
+	assert.Equal(t, "10s", cfg.Targets[0].Interval)
+	assert.Equal(t, map[string]string{"pop": "bur"}, cfg.Targets[0].Labels)
+
+	_, err = getConfig("notfound")
+	assert.NotNil(t, err)
+
+	cfgFile, err = ioutil.TempFile(t.TempDir(), "config.yml")
+	assert.Equal(t, nil, err)
+	cfgFile.Write([]byte("wrongyaml"))
+	_, err = getConfig(cfgFile.Name())
+	assert.NotNil(t, err)
+}
 func TestIsIPAddr(t *testing.T) {
 	assert.True(t, isIPAddr("8.8.8.8"))
 	assert.False(t, isIPAddr("www.yahoo.com"))

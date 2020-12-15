@@ -6,10 +6,12 @@ import (
 	yml "gopkg.in/yaml.v3"
 )
 
+// config represents tcpprobe config file
 type config struct {
 	Targets []target
 }
 
+// target represents a target/host
 type target struct {
 	Addr     string
 	Interval string

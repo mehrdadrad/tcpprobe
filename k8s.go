@@ -16,7 +16,7 @@ import (
 )
 
 type k8s struct {
-	clientset *kubernetes.Clientset
+	clientset kubernetes.Interface
 	pods      sync.Map
 }
 
@@ -34,14 +34,9 @@ func kube() *k8s {
 }
 
 func (k *k8s) start(ctx context.Context, tp *tp, req *request) {
-	clientset, err := newClientset()
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	go func() {
 		for {
-			pods, err := clientset.CoreV1().Pods(req.namespace).List(ctx, metav1.ListOptions{})
+			pods, err := k.clientset.CoreV1().Pods(req.namespace).List(ctx, metav1.ListOptions{})
 			if err != nil {
 				if ctx.Err() != nil {
 					return
@@ -55,6 +50,10 @@ func (k *k8s) start(ctx context.Context, tp *tp, req *request) {
 				if _, ok := k.pods.Load(pod.Name); !ok && pod.Status.Phase == "Running" {
 					k.pods.Store(pod.Name, pod.Status.PodIP)
 					for _, target := range getTargets(&pod) {
+						if ok := tp.isExist(target); ok {
+							log.Println(errExist, target)
+							continue
+						}
 						go func(ctx context.Context, pod v1.Pod, target string) {
 							ctx = context.WithValue(ctx, intervalKey, pod.Annotations["tcpprobe/interval"])
 							ctx = context.WithValue(ctx, labelsKey, []byte(pod.Annotations["tcpprobe/labels"]))
@@ -70,7 +69,7 @@ func (k *k8s) start(ctx context.Context, tp *tp, req *request) {
 		}
 	}()
 
-	factory := informers.NewSharedInformerFactoryWithOptions(clientset, time.Second*5, informers.WithNamespace("default"))
+	factory := informers.NewSharedInformerFactoryWithOptions(k.clientset, time.Second*5, informers.WithNamespace(req.namespace))
 	informer := factory.Core().V1().Pods().Informer()
 
 	informer.AddEventHandler(cache.ResourceEventHandlerFuncs{

@@ -12,6 +12,7 @@ import (
 	cli "github.com/urfave/cli/v2"
 )
 
+// request represents tcpprobe request's parameters
 type request struct {
 	count        int
 	ipv4         bool
@@ -20,9 +21,11 @@ type request struct {
 	k8s          bool
 	json         bool
 	jsonPretty   bool
+	grpc         bool
 	quiet        bool
 	insecure     bool
 	promDisabled bool
+	grpcAddr     string
 	namespace    string
 	promAddr     string
 	serverName   string
@@ -43,6 +46,17 @@ type request struct {
 	timeout     time.Duration
 	timeoutHTTP time.Duration
 	interval    time.Duration
+
+	cmd *cmdReq
+}
+
+// cmdReq represents grpc commands: add and delete
+type cmdReq struct {
+	cmd      string
+	addr     string
+	labels   string
+	interval string
+	args     []string
 }
 
 func getCli(args []string) (*request, []string, error) {
@@ -50,6 +64,12 @@ func getCli(args []string) (*request, []string, error) {
 		r       = &request{}
 		targets []string
 	)
+
+	cmdFlags := []cli.Flag{
+		&cli.StringFlag{Name: "interval", Aliases: []string{"i"}, Value: "5s", Usage: "time to wait after each request"},
+		&cli.StringFlag{Name: "addr", Aliases: []string{"d"}, Value: "localhost:8082", Usage: "tcpprobe grpc server address"},
+		&cli.StringFlag{Name: "labels", Aliases: []string{"l"}, Usage: "set labels"},
+	}
 
 	flags := []cli.Flag{
 		&cli.BoolFlag{Name: "ipv6", Aliases: []string{"6"}, Usage: "connect only to IPv6 address"},
@@ -75,16 +95,50 @@ func getCli(args []string) (*request, []string, error) {
 		&cli.BoolFlag{Name: "tcp-nodelay-disabled", Aliases: []string{"o"}, Usage: "disable Nagle's algorithm"},
 		&cli.BoolFlag{Name: "tcp-quickack-disabled", Aliases: []string{"k"}, Usage: "disable quickack mode"},
 		&cli.BoolFlag{Name: "k8s", Usage: "enable k8s"},
-		&cli.StringFlag{Name: "namespace", Aliases: []string{"default"}, Usage: "Tkubernetes namespace"},
+		&cli.StringFlag{Name: "namespace", Aliases: []string{"default"}, Usage: "kubernetes namespace"},
 		&cli.BoolFlag{Name: "quiet", Aliases: []string{"q"}, Usage: "turn off tcpprobe output"},
 		&cli.BoolFlag{Name: "json", Usage: "print in json format"},
 		&cli.BoolFlag{Name: "json-pretty", Usage: "pretty print in json format"},
+		&cli.BoolFlag{Name: "grpc", Usage: "enable grpc"},
+		&cli.StringFlag{Name: "grpc-addr", Aliases: []string{"g"}, Value: ":8082", Usage: "specify grpc server IP and port"},
 		&cli.BoolFlag{Name: "metrics", Usage: "show metric's descriptions"},
 		&cli.StringFlag{Name: "config", Usage: "config file"},
 	}
 
 	app := &cli.App{
 		Flags: flags,
+		Commands: []*cli.Command{
+			{
+				Name:  "add",
+				Usage: "add target through grpc",
+				Flags: cmdFlags,
+				Action: func(c *cli.Context) error {
+					r.cmd = &cmdReq{
+						cmd:      "add",
+						addr:     c.String("addr"),
+						interval: c.String("interval"),
+						labels:   c.String("labels"),
+						args:     c.Args().Slice(),
+					}
+					return nil
+				},
+			},
+			{
+				Name:  "del",
+				Usage: "delete target through grpc",
+				Flags: cmdFlags,
+				Action: func(c *cli.Context) error {
+					r.cmd = &cmdReq{
+						cmd:      "del",
+						addr:     c.String("addr"),
+						interval: c.String("interval"),
+						labels:   c.String("labels"),
+						args:     c.Args().Slice(),
+					}
+					return nil
+				},
+			},
+		},
 		Action: func(c *cli.Context) error {
 			r = &request{
 				ipv4:         c.Bool("ipv4"),
@@ -93,11 +147,13 @@ func getCli(args []string) (*request, []string, error) {
 				k8s:          c.Bool("k8s"),
 				json:         c.Bool("json"),
 				jsonPretty:   c.Bool("json-pretty"),
+				grpc:         c.Bool("grpc"),
 				quiet:        c.Bool("quiet"),
 				insecure:     c.Bool("insecure"),
 				promDisabled: c.Bool("prom-disabled"),
 				namespace:    c.String("namespace"),
 				promAddr:     c.String("prom-addr"),
+				grpcAddr:     c.String("grpc-addr"),
 				serverName:   c.String("server-name"),
 				srcAddr:      c.String("source-addr"),
 				filter:       c.String("filter"),
@@ -133,7 +189,7 @@ func getCli(args []string) (*request, []string, error) {
 			}
 
 			targets = c.Args().Slice()
-			if len(targets) < 1 && len(r.config) < 1 && !r.k8s {
+			if len(targets) < 1 && len(r.config) < 1 && !r.k8s && !r.grpc {
 				cli.ShowAppHelp(c)
 				return errors.New("configuration not specified")
 			}
@@ -146,13 +202,13 @@ func getCli(args []string) (*request, []string, error) {
 
 options:
    {{range .VisibleFlags}}{{.}}
-   {{end}}{{if .Copyright }}
-COPYRIGHT:
-   {{.Copyright}}
-   {{end}}{{if .Version}}
-VERSION:
-   {{.Version}}
    {{end}}
+examples:   
+   tcpprobe -json -c 0 https://www.google.com
+   tcpprobe -filter "Rtt;TCPConnect" https://www.yahoo.com
+   tcpprobe smtp.gmail.com:587
+
+for more information: https://github.com/mehrdadrad/tcpprobe/wiki   
 `
 
 	cli.HelpPrinter = func(w io.Writer, templ string, data interface{}) {

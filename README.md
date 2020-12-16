@@ -2,49 +2,25 @@
 
 [![Github Actions](https://github.com/mehrdadrad/tcpprobe/workflows/build/badge.svg)](https://github.com/mehrdadrad/tcpprobe/actions?query=workflow%3Abuild) [![Go report](https://goreportcard.com/badge/github.com/mehrdadrad/tcpprobe)](https://goreportcard.com/report/github.com/mehrdadrad/tcpprobe)  [![Coverage Status](https://coveralls.io/repos/github/mehrdadrad/tcpprobe/badge.svg?branch=main)](https://coveralls.io/github/mehrdadrad/tcpprobe?branch=main)
 
-TCPProbe is a tool for network path and service monitoring. It exposes information about socket’s underlying TCP session, TLS and HTTP (more than 60 metrics). the request is highly customizable.
+TCPProbe is a tool and service for network path and service monitoring. It exposes information about socket’s underlying TCP session, TLS and HTTP (more than 60 metrics). you can run it through command line or as a service. the request is highly customizable and you can integrate it with your application through gRPC. it runs in a Kubernetes cluster as cloud native application and by adding annotations on pods allow a fine control of the probing process.
 
 ![tcpprobe](/docs/imgs/tcpprobe.png)
 
 ## Features
 - TCP socket statistics
-- TCP/IP customization
+- TCP/IP request customization
 - Prometheus exporter
 - Probing multiple hosts
+- Runs as cli tool or service
+- Runs in Kubernetes as a cloud native application
+- Manageable through gRPC with your fav language
 
-#### Options
-```
-usage: tcpprobe options target(s)
+#### Documentation
+* [Command's options](https://github.com/mehrdadrad/tcpprobe/wiki/command's-options)
+* [Metrics](https://github.com/mehrdadrad/tcpprobe/wiki/metrics)
+* [Helm Chart](https://github.com/mehrdadrad/tcpprobe/wiki/helm)
+* [gRPC integration](https://github.com/mehrdadrad/tcpprobe/wiki/grpc)
 
-options:
-   --ipv6, -6                           connect only to IPv6 address (default: false)
-   --ipv4, -4                           connect only to IPv4 address (default: false)
-   --http2                              force to use HTTP version 2 (default: false)
-   --prom-disabled                      disable prometheus (default: false)
-   --insecure, -i                       don't validate the server's certificate (default: false)
-   --server-name value, -n value        server name is used to verify the hostname (TLS)
-   --source-addr value, -S value        source address in outgoing request
-   --prom-addr value, -p value          specify prometheus exporter IP and port (default: ":8081")
-   --filter value, -f value             given metric(s) with semicolon delimited
-   --count value, -c value              stop after sending count requests [0 is unlimited] (default: 0)
-   --timeout value, -t value            specify a timeout for dialing to targets (default: 5s)
-   --http-timeout value                 specify a timeout for HTTP (default: 30s)
-   --wait value, -w value               time to wait after each request (default: 1s)
-   --tos value, -z value                set the IP type of service (default: depends on the OS)
-   --ttl value, -m value                set the IP time to live (default: depends on the OS)
-   --socket-priority value, -r value    set queuing discipline (default: depends on the OS)
-   --mss value, -M value                TCP max segment size (default: depends on the OS)
-   --congestion-alg value               TCP congestion control algorithm (default: depends on the OS)
-   --send-buffer value                  maximum socket send buffer in bytes (default: depends on the OS)
-   --rcvd-buffer value                  maximum socket receive buffer in bytes (default: depends on the OS)
-   --tcp-nodelay-disabled, -o           disable Nagle's algorithm (default: false)
-   --tcp-quickack-disabled, -k          disable quickack mode (default: false)
-   --quiet, -q                          turn off tcpprobe output (default: false)
-   --json                               print in json format (default: false)
-   --json-pretty                        pretty print in json format (default: false)
-   --metrics                            show metric's descriptions (default: false)
-   --help, -h                           show help (default: false)
-```
 #### Command line ([download Linux binary](https://github.com/mehrdadrad/tcpprobe/releases/latest/download/tcpprobe)) 
 ```
 tcpprobe -json https://www.google.com
@@ -64,6 +40,12 @@ docker-compose up -d
 ```
 Open your browser and try http://localhost:9090
 You can edit the docker-compose.yml to customize the options and target(s).
+
+#### Helm Chart
+Detailed installation instructions for TCPProbe on Kubernetes are found [here](https://github.com/mehrdadrad/tcpprobe/wiki/helm).
+```
+helm install tcpprobe tcpprobe
+```
 
 ## License
 This project is licensed under MIT license. Please read the LICENSE file.

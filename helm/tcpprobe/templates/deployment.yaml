@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tcpprobe
+  labels:
+    app: tcpprobe
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tcpprobe
+  template:
+    metadata:
+      labels:
+        app: tcpprobe
+    spec:
+      serviceAccountName: tcpprobe
+      containers:
+      - name: tcpprobe
+        image: mehrdadrad/tcpprobe:latest
+        imagePullPolicy: Always
+        args: [
+          "-k8s", 
+          "-interval", 
+          {{ .Values.interval }}, 
+          "-timeout", 
+          {{ .Values.timeout }},
+          "-http-timeout",
+          {{ .Values.httpTimeout }},
+          "-tos",
+          {{ .Values.ipTypeOfService | quote }},
+          "-ttl",
+          {{ .Values.ipTimeToLive | quote }},
+          "-mss",
+          {{ .Values.tcpMSS | quote }},
+          "-send-buffer",
+          {{ .Values.tcpMaxSocketSendBuf | quote }},
+          "-rcvd-buffer",
+          {{ .Values.tcpMaxSocketRecvBuf | quote }},
+          {{- if eq .Values.tcpNoDelayDisable true }}
+          "-tcp-nodelay-disabled",
+          {{- end }}
+          {{- if eq .Values.tcpQuickAckDiable true }}
+          "-tcp-quickack-disabled",
+          {{- end }}
+          {{- if eq .Values.debug false }}
+          "-quiet"
+          {{- end }} 
+          ]
+        ports:
+        - containerPort: 8081  

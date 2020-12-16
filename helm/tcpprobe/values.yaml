@@ -1,1 +1,12 @@
 namespace: default
+interval: 20s
+timeout: 5s
+httpTimeout: 30s
+ipTypeOfService: 0 # zero means OS default
+ipTimeToLive: 0 # zero means OS default
+tcpMSS: 0 # zero means OS default
+tcpMaxSocketSendBuf: 0 # zero means OS default
+tcpMaxSocketRecvBuf: 0 # zero means OS default
+tcpNoDelayDisable: false
+tcpQuickAckDiable: false
+debug: false # enable/disable probing logging

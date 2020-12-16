@@ -138,6 +138,11 @@ func (t *tp) cleanup(ctx context.Context, target string) {
 	}
 
 	t.targets[target].client.deprometheus(ctx)
+
+	for _, ch := range t.targets[target].client.subCh {
+		close(ch)
+	}
+
 	delete(t.targets, target)
 }
 

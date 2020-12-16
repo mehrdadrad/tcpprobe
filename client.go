@@ -365,7 +365,9 @@ func (c *client) probe(ctx context.Context) {
 			log.Println(err)
 		}
 
-		c.publish()
+		if c.req.grpc {
+			c.publish()
+		}
 
 		c.printer(counter)
 

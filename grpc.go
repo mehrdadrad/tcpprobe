@@ -3,10 +3,13 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net"
+	"reflect"
 	"time"
 
+	pbstruct "github.com/golang/protobuf/ptypes/struct"
 	pb "github.com/mehrdadrad/tcpprobe/proto"
 	"google.golang.org/grpc"
 )
@@ -41,6 +44,40 @@ func (g *gServer) Delete(ctx context.Context, target *pb.Target) (*pb.Response, 
 	g.tp.stop(target.Addr)
 
 	return &pb.Response{Message: "target has been deleted", Code: 200}, nil
+}
+
+func (g *gServer) Get(target *pb.Target, stream pb.TCPProbe_GetServer) error {
+	var (
+		t  prop
+		ok bool
+	)
+
+	if t, ok = g.tp.targets[target.GetAddr()]; !ok {
+		return fmt.Errorf("target: %s not exist", target.GetAddr())
+	}
+
+	ch := make(chan *stats, 1)
+
+	t.client.subscribe(ch)
+	defer t.client.unsubscribe(ch)
+
+	for {
+		stats, ok := <-ch
+		if !ok {
+			break
+		}
+
+		err := stream.Send(
+			&pb.Stats{
+				Metrics: stats2pbStruct(stats),
+			},
+		)
+		if err != nil {
+			break
+		}
+	}
+
+	return nil
 }
 
 func grpcServer(tp *tp, req *request) {
@@ -100,4 +137,34 @@ func grpcClient(req *request) {
 			log.Printf("message: %s, code: %d", resp.Message, resp.Code)
 		}
 	}
+}
+
+func stats2pbStruct(stats *stats) *pbstruct.Struct {
+	r := &pbstruct.Struct{Fields: make(map[string]*pbstruct.Value)}
+
+	s := reflect.ValueOf(stats).Elem()
+	for i := 0; i < s.NumField(); i++ {
+		unexported := s.Type().Field(i).Tag.Get("unexported")
+		if unexported == "true" {
+			continue
+		}
+
+		switch s.Type().Field(i).Type.Kind() {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+			r.Fields[s.Type().Field(i).Name] = &pbstruct.Value{
+				Kind: &pbstruct.Value_NumberValue{NumberValue: float64(s.Field(i).Int())},
+			}
+		case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+			r.Fields[s.Type().Field(i).Name] = &pbstruct.Value{
+				Kind: &pbstruct.Value_NumberValue{NumberValue: float64(s.Field(i).Uint())},
+			}
+		case reflect.String:
+			r.Fields[s.Type().Field(i).Name] = &pbstruct.Value{
+				Kind: &pbstruct.Value_StringValue{StringValue: s.Field(i).String()},
+			}
+		}
+
+	}
+
+	return r
 }

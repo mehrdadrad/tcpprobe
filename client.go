@@ -14,6 +14,7 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 	"unsafe"
@@ -101,6 +102,9 @@ type client struct {
 	conn net.Conn
 	req  *request
 
+	subCh []chan *stats
+	mu    *sync.Mutex
+
 	stats
 }
 
@@ -110,11 +114,17 @@ func newClient(req *request, target string) *client {
 		urlSchema = &url.URL{}
 	}
 
-	return &client{
+	c := &client{
 		target:    target,
 		urlSchema: urlSchema,
 		req:       req,
 	}
+
+	if req.grpc {
+		c.mu = &sync.Mutex{}
+	}
+
+	return c
 }
 
 func (c *client) connect(ctx context.Context) error {
@@ -355,9 +365,39 @@ func (c *client) probe(ctx context.Context) {
 			log.Println(err)
 		}
 
+		c.publish()
+
 		c.printer(counter)
 
 		c.close()
+	}
+}
+
+func (c *client) publish() {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	for _, ch := range c.subCh {
+		select {
+		case ch <- &c.stats:
+		default:
+		}
+	}
+}
+
+func (c *client) subscribe(ch chan *stats) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	c.subCh = append(c.subCh, ch)
+}
+
+func (c *client) unsubscribe(ch chan *stats) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	for i, sCh := range c.subCh {
+		if ch == sCh {
+			c.subCh = append(c.subCh[:i], c.subCh[i+1:]...)
+		}
 	}
 }
 

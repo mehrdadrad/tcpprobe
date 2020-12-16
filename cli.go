@@ -53,6 +53,7 @@ type request struct {
 // cmdReq represents grpc commands: add and delete
 type cmdReq struct {
 	cmd      string
+	insecure bool
 	addr     string
 	labels   string
 	interval string
@@ -69,6 +70,7 @@ func getCli(args []string) (*request, []string, error) {
 		&cli.StringFlag{Name: "interval", Aliases: []string{"i"}, Value: "5s", Usage: "time to wait after each request"},
 		&cli.StringFlag{Name: "addr", Aliases: []string{"d"}, Value: "localhost:8082", Usage: "tcpprobe grpc server address"},
 		&cli.StringFlag{Name: "labels", Aliases: []string{"l"}, Usage: "set labels"},
+		&cli.BoolFlag{Name: "insecure", Value: true, Usage: "don't validate the server's certificate"},
 	}
 
 	flags := []cli.Flag{
@@ -88,14 +90,14 @@ func getCli(args []string) (*request, []string, error) {
 		&cli.IntFlag{Name: "tos", Aliases: []string{"z"}, DefaultText: "depends on the OS", Usage: "set the IP type of service"},
 		&cli.IntFlag{Name: "ttl", Aliases: []string{"m"}, DefaultText: "depends on the OS", Usage: "set the IP time to live"},
 		&cli.IntFlag{Name: "socket-priority", Aliases: []string{"r"}, DefaultText: "depends on the OS", Usage: "set queuing discipline"},
-		&cli.IntFlag{Name: "mss", Aliases: []string{"M"}, DefaultText: "depends on the OS", Usage: "TCP max segment size"},
+		&cli.IntFlag{Name: "mss", Aliases: []string{"M"}, DefaultText: "depends on the OS", Usage: "TCP maximum segment size"},
 		&cli.StringFlag{Name: "congestion-alg", Aliases: []string{}, DefaultText: "depends on the OS", Usage: "TCP congestion control algorithm"},
 		&cli.IntFlag{Name: "send-buffer", Aliases: []string{}, DefaultText: "depends on the OS", Usage: "maximum socket send buffer in bytes"},
 		&cli.IntFlag{Name: "rcvd-buffer", Aliases: []string{}, DefaultText: "depends on the OS", Usage: "maximum socket receive buffer in bytes"},
 		&cli.BoolFlag{Name: "tcp-nodelay-disabled", Aliases: []string{"o"}, Usage: "disable Nagle's algorithm"},
 		&cli.BoolFlag{Name: "tcp-quickack-disabled", Aliases: []string{"k"}, Usage: "disable quickack mode"},
 		&cli.BoolFlag{Name: "k8s", Usage: "enable k8s"},
-		&cli.StringFlag{Name: "namespace", Aliases: []string{"default"}, Usage: "kubernetes namespace"},
+		&cli.StringFlag{Name: "namespace", Value: "default", Usage: "kubernetes namespace"},
 		&cli.BoolFlag{Name: "quiet", Aliases: []string{"q"}, Usage: "turn off tcpprobe output"},
 		&cli.BoolFlag{Name: "json", Usage: "print in json format"},
 		&cli.BoolFlag{Name: "json-pretty", Usage: "pretty print in json format"},
@@ -115,11 +117,19 @@ func getCli(args []string) (*request, []string, error) {
 				Action: func(c *cli.Context) error {
 					r.cmd = &cmdReq{
 						cmd:      "add",
+						insecure: c.Bool("insecure"),
 						addr:     c.String("addr"),
 						interval: c.String("interval"),
 						labels:   c.String("labels"),
 						args:     c.Args().Slice(),
 					}
+
+					targets = c.Args().Slice()
+					if len(targets) < 1 {
+						cli.ShowCommandHelp(c, "add")
+						return errors.New("configuration not specified")
+					}
+
 					return nil
 				},
 			},
@@ -130,11 +140,19 @@ func getCli(args []string) (*request, []string, error) {
 				Action: func(c *cli.Context) error {
 					r.cmd = &cmdReq{
 						cmd:      "del",
+						insecure: c.Bool("insecure"),
 						addr:     c.String("addr"),
 						interval: c.String("interval"),
 						labels:   c.String("labels"),
 						args:     c.Args().Slice(),
 					}
+
+					targets = c.Args().Slice()
+					if len(targets) < 1 {
+						cli.ShowCommandHelp(c, "del")
+						return errors.New("configuration not specified")
+					}
+
 					return nil
 				},
 			},

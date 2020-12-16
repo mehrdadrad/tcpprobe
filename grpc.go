@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log"
 	"net"
+	"time"
 
 	pb "github.com/mehrdadrad/tcpprobe/proto"
 	"google.golang.org/grpc"
@@ -58,11 +59,19 @@ func grpcServer(tp *tp, req *request) {
 
 func grpcClient(req *request) {
 	var (
+		opts = []grpc.DialOption{}
 		resp *pb.Response
 		err  error
 	)
 
-	conn, err := grpc.Dial(req.cmd.addr, grpc.WithInsecure())
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second*5)
+	defer cancel()
+
+	if req.cmd.insecure {
+		opts = append(opts, grpc.WithInsecure())
+	}
+
+	conn, err := grpc.Dial(req.cmd.addr, opts...)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -79,11 +88,10 @@ func grpcClient(req *request) {
 			Labels:   labels,
 		}
 		if req.cmd.cmd != "del" {
-			resp, err = c.Add(context.TODO(), pt)
+			resp, err = c.Add(ctx, pt)
 
 		} else {
-			resp, err = c.Delete(context.TODO(), pt)
-
+			resp, err = c.Delete(ctx, pt)
 		}
 
 		if err != nil {

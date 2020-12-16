@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+import "google/protobuf/struct.proto";
+
 package main;
 
 option go_package = "github.com/mehrdadrad/tcpprobe;proto";
@@ -7,6 +9,7 @@ option go_package = "github.com/mehrdadrad/tcpprobe;proto";
 service TCPProbe {
     rpc Add(Target) returns (Response){}
     rpc Delete(Target) returns (Response){}
+    rpc Get(Target) returns (stream Stats) {}
 }
 
 message Target {
@@ -18,4 +21,8 @@ message Target {
 message Response {
     int32 code =1;
     string message = 2;
+}
+
+message Stats {
+   google.protobuf.Struct metrics = 1;
 }

@@ -11,15 +11,15 @@ TCPProbe is a tool and service for network path and service monitoring. It expos
 - TCP/IP request customization
 - Prometheus exporter
 - Probing multiple hosts
-- Runs as cli tool or service
-- Runs in Kubernetes as a cloud native application
-- Manageable through gRPC with your fav language
+- Runs as service
+- Kubernetes native
+- gRPC interface
 
 #### Documentation
 * [Command's options](https://github.com/mehrdadrad/tcpprobe/wiki/command's-options)
 * [Metrics](https://github.com/mehrdadrad/tcpprobe/wiki/metrics)
 * [Helm Chart](https://github.com/mehrdadrad/tcpprobe/wiki/helm)
-* [gRPC integration](https://github.com/mehrdadrad/tcpprobe/wiki/grpc)
+* [gRPC interface](https://github.com/mehrdadrad/tcpprobe/wiki/grpc)
 
 #### Command line ([download Linux binary](https://github.com/mehrdadrad/tcpprobe/releases/latest/download/tcpprobe)) 
 ```

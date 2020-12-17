@@ -335,3 +335,59 @@ func TestIsIPAddr(t *testing.T) {
 	assert.True(t, isIPAddr("8.8.8.8"))
 	assert.False(t, isIPAddr("www.yahoo.com"))
 }
+
+func TestPubSub(t *testing.T) {
+	var s *stats
+
+	c := &client{
+		mu: &sync.Mutex{},
+	}
+
+	ch := make(chan *stats, 1)
+	c.subscribe(ch)
+	c.stats.RcvMss = 1460
+	c.publish()
+	select {
+	case s = <-ch:
+	default:
+	}
+
+	assert.Len(t, c.subCh, 1)
+	assert.Equal(t, uint32(1460), s.RcvMss)
+
+	c.unsubscribe(ch)
+	assert.Len(t, c.subCh, 0)
+}
+
+func TestGrpc(t *testing.T) {
+	tp := &tp{targets: make(map[string]prop)}
+
+	req := &request{
+		grpcAddr: "127.0.0.1:8085",
+		cmd: &cmdReq{
+			cmd:      "add",
+			addr:     "127.0.0.1:8085",
+			interval: "5s",
+			insecure: true,
+			args:     []string{"127.0.0.1:8085"},
+		},
+	}
+	grpcServer(tp, req)
+
+	// add
+	grpcClient(req)
+	time.Sleep(time.Millisecond * 300)
+	assert.Contains(t, tp.targets, "127.0.0.1:8085")
+
+	req.cmd = &cmdReq{
+		cmd:      "del",
+		addr:     "127.0.0.1:8085",
+		insecure: true,
+		args:     []string{"127.0.0.1:8085"},
+	}
+
+	// del
+	grpcClient(req)
+	time.Sleep(time.Millisecond * 300)
+	assert.NotContains(t, tp.targets, "127.0.0.1:8085")
+}

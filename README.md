@@ -3,7 +3,7 @@
 
 [![Github Actions](https://github.com/mehrdadrad/tcpprobe/workflows/build/badge.svg)](https://github.com/mehrdadrad/tcpprobe/actions?query=workflow%3Abuild) [![Go report](https://goreportcard.com/badge/github.com/mehrdadrad/tcpprobe)](https://goreportcard.com/report/github.com/mehrdadrad/tcpprobe)  [![Coverage Status](https://coveralls.io/repos/github/mehrdadrad/tcpprobe/badge.svg?branch=main)](https://coveralls.io/github/mehrdadrad/tcpprobe?branch=main)
 
-**TCPProbe** is a tool and service for network path and service monitoring. It exposes information about socket’s underlying TCP session, TLS and HTTP (more than 60 metrics). you can run it through command line or as a service. the request is highly customizable and you can integrate it with your application through gRPC. it runs in a Kubernetes cluster as cloud native application and by adding annotations on pods allow a fine control of the probing process.
+**TCPProbe** is a modern TCP tool and service for performance observability. It exposes information about socket’s underlying TCP session, TLS and HTTP (more than 60 metrics). you can run it through command line or as a service. the request is highly customizable and you can integrate it with your application through gRPC. it runs in a Kubernetes cluster as cloud native application and by adding annotations on pods allow a fine control of the probing process.
 
 ![tcpprobe](/docs/imgs/tcpprobe.png)
 

@@ -115,26 +115,31 @@ func grpcClient(req *request) {
 
 	c := pb.NewTCPProbeClient(conn)
 
+	labels := map[string]string{}
+	json.Unmarshal([]byte(req.cmd.labels), &labels)
+
 	for _, target := range req.cmd.args {
-		labels := map[string]string{}
-		json.Unmarshal([]byte(req.cmd.labels), &labels)
 
 		pt := &pb.Target{
 			Addr:     target,
 			Interval: req.cmd.interval,
 			Labels:   labels,
 		}
-		if req.cmd.cmd != "del" {
-			resp, err = c.Add(ctx, pt)
 
-		} else {
+		switch req.cmd.cmd {
+		case "add":
+			resp, err = c.Add(ctx, pt)
+		case "del":
 			resp, err = c.Delete(ctx, pt)
+		default:
+			log.Printf("%s doesn't support", req.cmd.cmd)
+			return
 		}
 
 		if err != nil {
 			log.Println(err)
 		} else {
-			log.Printf("message: %s, code: %d", resp.Message, resp.Code)
+			log.Printf("%s - %s", resp.Message, target)
 		}
 	}
 }

@@ -136,8 +136,27 @@ func TestCli(t *testing.T) {
 	_, m, err = getCli(args)
 	assert.NoError(t, err)
 	assert.Len(t, m, 1)
-
 	os.Stdout = stdout
+
+	// add
+	args = []string{"tcpprobe", "add", "127.0.0.2:8080"}
+	req, _, err := getCli(args)
+	assert.NoError(t, err)
+	assert.Equal(t, req.cmd.cmd, "add")
+
+	args = []string{"tcpprobe", "add"}
+	req, _, err = getCli(args)
+	assert.Error(t, err)
+
+	// del
+	args = []string{"tcpprobe", "del", "127.0.0.2:8080"}
+	req, _, err = getCli(args)
+	assert.NoError(t, err)
+	assert.Equal(t, req.cmd.cmd, "del")
+
+	args = []string{"tcpprobe", "del"}
+	req, _, err = getCli(args)
+	assert.Error(t, err)
 }
 
 func TestPrometheus(t *testing.T) {
@@ -390,4 +409,15 @@ func TestGrpc(t *testing.T) {
 	grpcClient(req)
 	time.Sleep(time.Millisecond * 300)
 	assert.NotContains(t, tp.targets, "127.0.0.1:8085")
+}
+
+func TestStats2pbStruct(t *testing.T) {
+	s := &stats{State: 1, Rtt: 55, TCPCongesAlg: "reno"}
+	pbs := stats2pbStruct(s)
+	v := pbs.Fields["State"].GetNumberValue()
+	assert.Equal(t, 1.0, v)
+	v = pbs.Fields["Rtt"].GetNumberValue()
+	assert.Equal(t, 55.0, v)
+	vs := pbs.Fields["TCPCongesAlg"].GetStringValue()
+	assert.Equal(t, "reno", vs)
 }

@@ -106,6 +106,12 @@ func TestClient(t *testing.T) {
 	err = c.connect(ctx)
 	assert.NoError(t, err)
 	c.close()
+
+	c = newClient(&r, "mytarget")
+	c.addr = "192.168.0.1"
+	assert.True(t, c.isIPv4())
+	c.addr = ":1"
+	assert.False(t, c.isIPv4())
 }
 
 func TestCli(t *testing.T) {

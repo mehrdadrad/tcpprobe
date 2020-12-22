@@ -175,14 +175,21 @@ func (c *client) dialTLSContext(ctx context.Context, network, addr string) (net.
 
 func (c *client) control(network string, address string, conn syscall.RawConn) error {
 	return conn.Control(func(fd uintptr) {
-		setSocketOptInt(int(fd), syscall.IPPROTO_IP, syscall.IP_TOS, c.req.soIPTOS, false)
-		setSocketOptInt(int(fd), syscall.IPPROTO_IP, syscall.IP_TTL, c.req.soIPTTL, false)
+
 		setSocketOptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_PRIORITY, c.req.soPriority, false)
 		setSocketOptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_SNDBUF, c.req.soSndBuf, false)
 		setSocketOptInt(int(fd), syscall.SOL_SOCKET, syscall.SO_RCVBUF, c.req.soRcvBuf, false)
 		setSocketOptInt(int(fd), syscall.IPPROTO_TCP, syscall.TCP_NODELAY, boolToInt(!c.req.soTCPNoDelay), true)
 		setSocketOptInt(int(fd), syscall.IPPROTO_TCP, syscall.TCP_QUICKACK, boolToInt(!c.req.soTCPQuickACK), true)
 		setSocketOptInt(int(fd), syscall.IPPROTO_TCP, syscall.TCP_MAXSEG, c.req.soMaxSegSize, false)
+
+		if c.isIPv4() {
+			setSocketOptInt(int(fd), syscall.IPPROTO_IP, syscall.IP_TOS, c.req.soIPTOS, false)
+			setSocketOptInt(int(fd), syscall.IPPROTO_IP, syscall.IP_TTL, c.req.soIPTTL, false)
+		} else {
+			setSocketOptInt(int(fd), syscall.IPPROTO_IPV6, syscall.IPV6_UNICAST_HOPS, c.req.soIPTTL, false)
+			setSocketOptInt(int(fd), syscall.IPPROTO_IPV6, syscall.IPV6_TCLASS, c.req.soIPTOS, false)
+		}
 
 		err := syscall.SetsockoptString(int(fd), syscall.IPPROTO_TCP, syscall.TCP_CONGESTION, c.req.soCongestion)
 		if c.req.soCongestion != "" && err != nil {
@@ -272,6 +279,10 @@ func (c *client) getAddr() (string, error) {
 
 func (c *client) close() {
 	c.conn.Close()
+}
+
+func (c *client) isIPv4() bool {
+	return net.ParseIP(c.addr).To4() != nil
 }
 
 func (c *client) httpGet() error {

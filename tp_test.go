@@ -427,3 +427,28 @@ func TestStats2pbStruct(t *testing.T) {
 	vs := pbs.Fields["TCPCongesAlg"].GetStringValue()
 	assert.Equal(t, "reno", vs)
 }
+
+func TestCheckUpdate(t *testing.T) {
+	version = "1.1.1"
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, "http://fake/v1.1.1", http.StatusFound)
+	}))
+
+	ok, _ := checkUpdate(ts.URL)
+	assert.Equal(t, false, ok)
+	version = "1.1.0"
+	ok, newVersion := checkUpdate(ts.URL)
+	assert.Equal(t, true, ok)
+	assert.Equal(t, "v1.1.1", newVersion)
+
+	ts.Close()
+	ok, newVersion = checkUpdate(ts.URL)
+	assert.Equal(t, false, ok)
+
+	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, "nothing")
+	}))
+	ok, newVersion = checkUpdate(ts.URL)
+	assert.Equal(t, false, ok)
+
+}

@@ -7,10 +7,16 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/sethvargo/go-signalcontext"
+)
+
+var (
+	version      = "0.2.4"
+	tpReleaseURL = "https://github.com/mehrdadrad/tcpprobe/releases/latest"
 )
 
 type intervalContextKey string
@@ -164,4 +170,27 @@ func (t *tp) isExist(target string) bool {
 	_, ok := t.targets[target]
 
 	return ok
+}
+
+func checkUpdate(tpReleaseURL string) (bool, string) {
+	client := http.Client{
+		CheckRedirect: func(req *http.Request, via []*http.Request) error {
+			return errors.New("redirect")
+		},
+	}
+
+	resp, err := client.Get(tpReleaseURL)
+	if err != nil && resp != nil && resp.StatusCode == http.StatusFound {
+		url, err := resp.Location()
+		if err != nil {
+			return false, ""
+		}
+		path := strings.Split(url.Path, "/")
+		if path[len(path)-1] == "v"+version {
+			return false, ""
+		}
+		return true, path[len(path)-1]
+	}
+
+	return false, ""
 }

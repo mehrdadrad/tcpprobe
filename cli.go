@@ -48,6 +48,8 @@ type request struct {
 	interval    time.Duration
 
 	cmd *cmdReq
+
+	checkUpdate bool
 }
 
 // cmdReq represents grpc commands: add and delete
@@ -103,12 +105,14 @@ func getCli(args []string) (*request, []string, error) {
 		&cli.BoolFlag{Name: "json-pretty", Usage: "pretty print in json format"},
 		&cli.BoolFlag{Name: "grpc", Usage: "enable grpc"},
 		&cli.StringFlag{Name: "grpc-addr", Aliases: []string{"g"}, Value: ":8082", Usage: "specify grpc server IP and port"},
-		&cli.BoolFlag{Name: "metrics", Usage: "show metric's descriptions"},
-		&cli.StringFlag{Name: "config", Usage: "config file"},
+		&cli.BoolFlag{Name: "metrics", Usage: "show metrics descriptions"},
+		&cli.StringFlag{Name: "config", Usage: "yaml config file"},
+		&cli.BoolFlag{Name: "check-update", Usage: "check for update"},
 	}
 
 	app := &cli.App{
-		Flags: flags,
+		Version: version,
+		Flags:   flags,
 		Commands: []*cli.Command{
 			{
 				Name:  "add",
@@ -206,6 +210,16 @@ func getCli(args []string) (*request, []string, error) {
 				return nil
 			}
 
+			if c.Bool("check-update") {
+				ok, newVersion := checkUpdate(tpReleaseURL)
+				if ok {
+					fmt.Printf("the new version: v%s available\n", newVersion)
+				} else {
+					fmt.Println("there is currently no update available")
+				}
+				return nil
+			}
+
 			targets = c.Args().Slice()
 			if len(targets) < 1 && len(r.config) < 1 && !r.k8s && !r.grpc {
 				cli.ShowAppHelp(c)
@@ -228,6 +242,11 @@ examples:
 
 for more information: https://github.com/mehrdadrad/tcpprobe/wiki   
 `
+
+	cli.VersionPrinter = func(c *cli.Context) {
+		fmt.Printf("tcpprobe version %s\n", c.App.Version)
+		cli.OsExiter(0)
+	}
 
 	cli.HelpPrinter = func(w io.Writer, templ string, data interface{}) {
 		funcMap := template.FuncMap{

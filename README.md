@@ -14,7 +14,7 @@
 - Kubernetes native
 - gRPC interface
 
-#### Documentation
+## Documentation
 * [Command's options](https://github.com/mehrdadrad/tcpprobe/wiki/command's-options)
 * [Service](https://github.com/mehrdadrad/tcpprobe/wiki/service)
 * [Demo](https://github.com/mehrdadrad/tcpprobe/wiki/prometheus-grafana)
@@ -22,9 +22,6 @@
 * [Helm Chart](https://github.com/mehrdadrad/tcpprobe/wiki/helm)
 * [CLI tutorial](https://github.com/mehrdadrad/tcpprobe/wiki/command-line-tutorial)
 * [gRPC](https://github.com/mehrdadrad/tcpprobe/wiki/grpc)
-
-#### **Demo** [TCPProbe + Prometheus + Grafana]
-You can run this demo through docker-compose and customize it with your targets quickly from [here](https://github.com/mehrdadrad/tcpprobe/wiki/prometheus_grafana).
 
 #### **Command line** ([download Linux binary](https://github.com/mehrdadrad/tcpprobe/releases/latest/download/tcpprobe)) 
 ```

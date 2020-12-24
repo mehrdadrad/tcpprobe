@@ -1,0 +1,33 @@
+version: "3"
+services:
+  tcpprobe:
+    image: mehrdadrad/tcpprobe:latest
+    hostname: tcpprobe
+    ports:
+      - "8081:8081"
+      - "8082:8082"
+    entrypoint:
+      ["tcpprobe", "-grpc", "-i", "20s", "https://www.google.com", "https://github.com"]
+
+  prometheus:
+    image: prom/prometheus:latest
+    hostname: prometheus
+    ports:
+      - "9090:9090"
+    container_name: prometheus
+    volumes:
+      - ./:/etc/prometheus/
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+
+  grafana:
+    image: "grafana/grafana:latest"
+    container_name: grafana
+    volumes:
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=tcpprobe
+      - GF_SECURITY_ADMIN_PASSWORD=tcpprobe    

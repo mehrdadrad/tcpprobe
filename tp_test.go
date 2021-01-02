@@ -222,7 +222,7 @@ func TestPrintText(t *testing.T) {
 	c.printer(0)
 
 	buf := new(bytes.Buffer)
-	io.CopyN(buf, r, 46)
+	io.CopyN(buf, r, 51)
 	assert.Contains(t, buf.String(), "Rtt:5")
 
 	os.Stdout = stdout
@@ -313,7 +313,7 @@ func TestK8SStart(t *testing.T) {
 			Name:      "fake",
 			Namespace: "default",
 			Annotations: map[string]string{
-				"tcpprobe/targets":  "https://www.google.com",
+				"tcpprobe/targets":  "faketarget",
 				"tcpprobe/interval": "6s",
 				"tcpprobe/labels":   "{\"mykey\":\"myvalue\"}",
 			},
@@ -325,7 +325,10 @@ func TestK8SStart(t *testing.T) {
 	k := k8s{clientset: clientset, pods: sync.Map{}}
 	k.start(ctx, tp, req)
 	time.Sleep(time.Second)
-	assert.Contains(t, tp.targets, "https://www.google.com")
+	assert.Contains(t, tp.targets, "faketarget")
+	clientset.CoreV1().Pods("default").Delete(context.TODO(), "fake", metav1.DeleteOptions{})
+	time.Sleep(time.Second)
+	assert.NotContains(t, tp.targets, "faketarget")
 }
 
 func TestGetConfig(t *testing.T) {

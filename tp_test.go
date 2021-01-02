@@ -218,11 +218,12 @@ func TestPrintText(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	c := &client{stats: stats{Rtt: 5}, req: &request{filter: "rtt"}}
+	c := &client{stats: stats{Rtt: 5}, req: &request{filter: "rtt"}, timestamp: 1609558015}
 	c.printer(0)
 
 	buf := new(bytes.Buffer)
-	io.CopyN(buf, r, 51)
+	io.CopyN(buf, r, 50)
+	t.Log(buf.String())
 	assert.Contains(t, buf.String(), "Rtt:5")
 
 	os.Stdout = stdout
@@ -447,11 +448,13 @@ func TestCheckUpdate(t *testing.T) {
 	ts.Close()
 	ok, newVersion = checkUpdate(ts.URL)
 	assert.Equal(t, false, ok)
+	assert.Equal(t, "", newVersion)
 
 	ts = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "nothing")
 	}))
 	ok, newVersion = checkUpdate(ts.URL)
 	assert.Equal(t, false, ok)
+	assert.Equal(t, "", newVersion)
 
 }

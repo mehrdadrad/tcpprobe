@@ -124,7 +124,8 @@ func TestCli(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, m, 0)
 	buf := new(bytes.Buffer)
-	io.CopyN(buf, r, 7)
+	go io.CopyN(buf, r, 7)
+	time.Sleep(100 * time.Millisecond)
 	assert.Equal(t, "metrics", buf.String())
 
 	r, w, _ = os.Pipe()
@@ -135,7 +136,8 @@ func TestCli(t *testing.T) {
 	assert.Len(t, m, 0)
 	buf.Reset()
 
-	io.CopyN(buf, r, 5)
+	go io.CopyN(buf, r, 5)
+	time.Sleep(100 * time.Millisecond)
 	assert.Equal(t, "usage", buf.String())
 
 	args = []string{"tcpprobe", "127.0.0.1"}
@@ -214,6 +216,7 @@ func TestGetSrcAddr(t *testing.T) {
 }
 
 func TestPrintText(t *testing.T) {
+	buf := new(bytes.Buffer)
 	stdout := os.Stdout
 	r, w, _ := os.Pipe()
 	os.Stdout = w
@@ -221,9 +224,8 @@ func TestPrintText(t *testing.T) {
 	c := &client{stats: stats{Rtt: 5}, req: &request{filter: "rtt"}, timestamp: 1609558015}
 	c.printer(0)
 
-	buf := new(bytes.Buffer)
-	io.CopyN(buf, r, 50)
-	t.Log(buf.String())
+	go io.Copy(buf, r)
+	time.Sleep(100 * time.Millisecond)
 	assert.Contains(t, buf.String(), "Rtt:5")
 
 	os.Stdout = stdout
@@ -283,7 +285,8 @@ func TestMain(t *testing.T) {
 	main()
 
 	buf := new(bytes.Buffer)
-	io.CopyN(buf, r, 800)
+	go io.Copy(buf, r)
+	time.Sleep(100 * time.Millisecond)
 
 	assert.Contains(t, buf.String(), "target: https://127.0.0.1")
 	assert.Contains(t, buf.String(), "HTTPStatusCode:200")

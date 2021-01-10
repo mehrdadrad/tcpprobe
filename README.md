@@ -5,6 +5,8 @@
 
 **TCPProbe** is a modern TCP tool and service for network performance observability. It exposes information about socket’s underlying TCP session, TLS and HTTP (more than 60 [metrics](https://github.com/mehrdadrad/tcpprobe/wiki/metrics)). you can run it through command line or as a service. the request is highly customizable and you can integrate it with your application through gRPC. it runs in a Kubernetes cluster as cloud native application and by adding annotations on pods allow a fine control of the probing process.
 
+![tcpprobe](/docs/imgs/tcpprobe_banner.png) 
+
 ## Features
 - TCP socket statistics
 - TCP/IP request customization

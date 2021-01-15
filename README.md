@@ -19,7 +19,7 @@
 ## Documentation
 * [Command's options](https://github.com/mehrdadrad/tcpprobe/wiki/command's-options)
 * [Service](https://github.com/mehrdadrad/tcpprobe/wiki/service)
-* [Demo](https://github.com/mehrdadrad/tcpprobe/wiki/prometheus-grafana) ([🎥 video](https://www.youtube.com/watch?v=wqk1cYRPrYI))
+* [Demo](https://github.com/mehrdadrad/tcpprobe/wiki/prometheus-grafana) ([🎥 video](https://youtu.be/0Rr2ndrxftw))
 * [Metrics](https://github.com/mehrdadrad/tcpprobe/wiki/metrics)
 * [Helm Chart](https://github.com/mehrdadrad/tcpprobe/wiki/helm)
 * [CLI tutorial](https://github.com/mehrdadrad/tcpprobe/wiki/command-line-tutorial)

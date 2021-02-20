@@ -30,8 +30,8 @@ type request struct {
 	promAddr     string
 	serverName   string
 	srcAddr      string
-	filter       string
 	config       string
+	filter       map[string]struct{}
 
 	soIPTOS       int
 	soIPTTL       int
@@ -178,9 +178,9 @@ func getCli(args []string) (*request, []string, error) {
 				grpcAddr:     c.String("grpc-addr"),
 				serverName:   c.String("server-name"),
 				srcAddr:      c.String("source-addr"),
-				filter:       c.String("filter"),
 				config:       c.String("config"),
 				count:        c.Int("count"),
+				filter:       filterMap(c.String("filter")),
 
 				soIPTOS:      c.Int("tos"),
 				soIPTTL:      c.Int("ttl"),
@@ -259,4 +259,16 @@ for more information: https://github.com/mehrdadrad/tcpprobe/wiki
 	err := app.Run(args)
 
 	return r, targets, err
+}
+
+func filterMap(s string) map[string]struct{} {
+	m := map[string]struct{}{}
+	if len(s) < 1 {
+		return m
+	}
+
+	for _, f := range strings.Split(strings.ToLower(s), ";") {
+		m[f] = struct{}{}
+	}
+	return m
 }

@@ -27,7 +27,7 @@ func (c *client) printer(counter int) {
 
 func (c *client) printText(counter int) {
 	v := reflect.ValueOf(c.stats)
-	filter := strings.ToLower(c.req.filter)
+	filterLen := len(c.req.filter)
 
 	ip, _, _ := net.SplitHostPort(c.addr)
 	datetime := time.Unix(c.timestamp, 0).Format(time.RFC3339)
@@ -37,7 +37,7 @@ func (c *client) printText(counter int) {
 		if f.Tag.Get("unexported") == "true" {
 			continue
 		}
-		if strings.Contains(filter, strings.ToLower(f.Name)) || filter == "" {
+		if _, ok := c.req.filter[strings.ToLower(f.Name)]; ok || filterLen == 0 {
 			fmt.Printf("%s:%v ", f.Name, v.Field(i).Interface())
 		}
 	}
@@ -65,7 +65,7 @@ func (c *client) printJSON(counter int, pretty bool) {
 		c.stats,
 	}
 
-	if c.req.filter != "" {
+	if len(c.req.filter) > 0 {
 		b, err = jsonMarshalFilter(d, c.req.filter, pretty)
 	} else if pretty {
 		b, err = json.MarshalIndent(d, "", "  ")
@@ -81,7 +81,7 @@ func (c *client) printJSON(counter int, pretty bool) {
 	fmt.Println(string(b))
 }
 
-func jsonMarshalFilter(s interface{}, filter string, pretty bool) ([]byte, error) {
+func jsonMarshalFilter(s interface{}, filter map[string]struct{}, pretty bool) ([]byte, error) {
 	var m map[string]interface{}
 
 	b, err := json.Marshal(s)
@@ -91,10 +91,8 @@ func jsonMarshalFilter(s interface{}, filter string, pretty bool) ([]byte, error
 
 	json.Unmarshal(b, &m)
 
-	lFilter := strings.ToLower(filter)
-
 	for k := range m {
-		if !strings.Contains(lFilter, strings.ToLower(k)) {
+		if _, ok := filter[strings.ToLower(k)]; !ok {
 			delete(m, k)
 		}
 	}

@@ -221,7 +221,7 @@ func TestPrintText(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	c := &client{stats: stats{Rtt: 5}, req: &request{filter: "rtt"}, timestamp: 1609558015}
+	c := &client{stats: stats{Rtt: 5}, req: &request{filter: map[string]struct{}{"rtt": struct{}{}}}, timestamp: 1609558015}
 	c.printer(0)
 
 	go io.Copy(buf, r)
@@ -236,7 +236,7 @@ func TestPrintJsonPretty(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	c := &client{stats: stats{}, req: &request{jsonPretty: true, filter: "rtt"}}
+	c := &client{stats: stats{}, req: &request{jsonPretty: true, filter: map[string]struct{}{"rtt": struct{}{}}}}
 	c.printer(0)
 
 	buf := make([]byte, 13)
@@ -252,7 +252,7 @@ func TestPrintJson(t *testing.T) {
 	r, w, _ := os.Pipe()
 	os.Stdout = w
 
-	c := &client{stats: stats{}, req: &request{json: true, filter: "rtt"}}
+	c := &client{stats: stats{}, req: &request{json: true, filter: map[string]struct{}{"rtt": struct{}{}}}}
 	c.printer(0)
 
 	buf := make([]byte, 9)

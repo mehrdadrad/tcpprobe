@@ -108,9 +108,9 @@ func TestClient(t *testing.T) {
 	c.close()
 
 	c = newClient(&r, "mytarget")
-	c.addr = "192.168.0.1"
+	c.addr = "192.168.0.1:80"
 	assert.True(t, c.isIPv4())
-	c.addr = ":1"
+	c.addr = "[:1]:80"
 	assert.False(t, c.isIPv4())
 }
 

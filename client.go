@@ -282,7 +282,8 @@ func (c *client) close() {
 }
 
 func (c *client) isIPv4() bool {
-	return net.ParseIP(c.addr).To4() != nil
+	ip, _, _ := net.SplitHostPort(c.addr)
+	return net.ParseIP(ip).To4() != nil
 }
 
 func (c *client) httpGet() error {
